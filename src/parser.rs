@@ -3,7 +3,7 @@ use crate::ast;
 pub fn parse(prog: &str) {}
 
 peg::parser! {
-    grammar awk() for str {
+    pub grammar awk() for str {
         pub rule prog() -> ast::Program
             = i:(item() ** ";") { i }
 
@@ -28,11 +28,11 @@ peg::parser! {
 
         rule expression() -> ast::Expression
             = precedence! {
-                n:number() { ast::Expression::Value(n) }
+                n:number() { ast::Expression::Value(ast::Value::Num(n)) }
             }
 
-        rule number() -> i64
-            = n:$(['0'..='9']+) {? n.parse::<i64>().or(Err("i64")) }
+        pub rule number() -> f64
+            = n:$(['0'..='9']+) {? n.parse::<f64>().or(Err("i64")) }
 
     }
 }
@@ -42,7 +42,7 @@ fn test_parser() {
     let prg = "BEGIN{print(123)}";
     let expect = vec![ast::Item {
         pattern: ast::Pattern::Begin,
-        action: vec![ast::Statement::Print(vec![ast::Expression::Value(123)])],
+        action: vec![ast::Statement::Print(vec![ast::Expression::Value(ast::Value::Num(123.0))])],
     }];
     let actual = awk::prog(prg).unwrap();
 
