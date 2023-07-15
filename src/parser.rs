@@ -7,7 +7,7 @@ peg::parser! {
         pub rule prog() -> ast::Program
             = i:(item() ** ";") { i }
 
-        rule item() -> ast::Item 
+        rule item() -> ast::Item
             = pattern:pattern() action:action() { ast::Item { pattern, action } }
 
         rule pattern() -> ast::Pattern
@@ -31,14 +31,20 @@ peg::parser! {
                 n:number() { ast::Expression::Value(n) }
             }
 
-        rule number() -> i64 
+        rule number() -> i64
             = n:$(['0'..='9']+) {? n.parse::<i64>().or(Err("i64")) }
-        
+
     }
 }
 
 #[test]
 fn test_parser() {
     let prg = "BEGIN{print(123)}";
-    dbg!(&awk::prog(prg));
+    let expect = vec![ast::Item {
+        pattern: ast::Pattern::Begin,
+        action: vec![ast::Statement::Print(vec![ast::Expression::Value(123)])],
+    }];
+    let actual = awk::prog(prg).unwrap();
+
+    assert_eq!(expect, actual);
 }
