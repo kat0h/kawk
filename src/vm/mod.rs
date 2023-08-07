@@ -1,7 +1,7 @@
 mod value;
 use crate::ast::Value;
 
-use std::io::{self, BufRead, Write};
+use std::io::{BufRead, Write};
 
 pub struct VM<'a> {
     program: &'a [Opcode],
@@ -97,7 +97,7 @@ fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
     writeln!(writer).unwrap();
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Opcode {
     End,
     Push(Value),
