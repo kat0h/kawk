@@ -39,10 +39,13 @@ peg::parser! {
 
 #[test]
 fn test_parser() {
-    let prg = "BEGIN{print(123)}";
+    let prg = "BEGIN{print(123,456)}";
     let expect = vec![ast::Item {
         pattern: ast::Pattern::Begin,
-        action: vec![ast::Statement::Print(vec![ast::Expression::Value(ast::Value::Num(123.0))])],
+        action: vec![ast::Statement::Print(vec![
+            ast::Expression::Value(ast::Value::Num(123.0)),
+            ast::Expression::Value(ast::Value::Num(456.0)),
+        ])],
     }];
     let actual = awk::prog(prg).unwrap();
 
