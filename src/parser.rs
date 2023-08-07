@@ -1,6 +1,8 @@
 use crate::ast;
 
-pub fn parse(prog: &str) {}
+pub fn parse(prog: &str) -> Result<Vec<ast::Item>, peg::error::ParseError<peg::str::LineCol>> {
+    awk::prog(prog)
+}
 
 peg::parser! {
     pub grammar awk() for str {

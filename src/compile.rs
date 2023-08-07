@@ -15,10 +15,15 @@ pub type VMProgram = Vec<Opcode>;
  */
 
 pub fn compile(ast: &ast::Program) -> VMProgram {
+    // そのうちはコンパイルエラーをResultで返すようにしたい
+    // (エラーは呼び出し側で処理すべきなので)
     let mut vmprogram: VMProgram = vec![];
 
     // BEGINパターンを探しコンパイル
     compile_all_begin_pattern(ast, &mut vmprogram);
+
+    // 最後にENDを追加 (そうしないと終了しない)
+    vmprogram.push(Opcode::End);
 
     vmprogram
 }
@@ -36,6 +41,7 @@ fn compile_all_begin_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
     }
 }
 
+// action ::: {}で囲われた一連のコード
 fn compile_action(action: &ast::Action, vmprogram: &mut VMProgram) {
     for statement in action.iter() {
         match statement {
