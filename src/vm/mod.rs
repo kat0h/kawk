@@ -91,7 +91,8 @@ fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
             if s { " " } else { "" },
             // スタックが空の時はpanicする
             vm.stack.pop().unwrap().to_str()
-        ).unwrap();
+        )
+        .unwrap();
         s = true;
     }
     writeln!(writer).unwrap();
@@ -113,11 +114,7 @@ pub enum Opcode {
 fn test_vm() {
     use std::str;
 
-    let prg = [
-        Opcode::Push(Value::Num(1.0)),
-        Opcode::Print(1),
-        Opcode::End,
-    ];
+    let prg = [Opcode::Push(Value::Num(1.0)), Opcode::Print(1), Opcode::End];
 
     let mut vm = VM::new(&prg);
 

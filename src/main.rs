@@ -13,4 +13,3 @@ fn main() {
 
     println!("{}", &args[1]);
 }
-
