@@ -12,6 +12,9 @@ pub struct VM<'a> {
     nf: Value,
 }
 
+// TODO
+// unwrap() などでエラーをハンドリングしているところをきちんと伝搬させるようにする
+
 impl VM<'_> {
     pub fn new(program: &[Opcode]) -> VM {
         VM {
@@ -40,33 +43,58 @@ impl VM<'_> {
                     self.pc = *pc;
                     continue;
                 }
-                /*
-                 * If
-                 * スタックの一番上がtruetyなとき指定されたポインタにジャンプ
-                 */
+                //
+                // If
+                // スタックの一番上がtruetyなとき指定されたポインタにジャンプ
+                //
                 Opcode::If(pc) => {
                     if self.stack.pop().unwrap().is_true() {
                         self.pc = *pc;
                         continue;
                     }
                 }
-                /*
-                 * Readline
-                 * 標準入力から行を一行読み込み，fieldsに設定する．
-                 * 行の読み込みに成功したらスタックに0をpushし，失敗(EOF)したら1をpushする．
-                 */
+                // 四則演算
+                // スタックのトップからR→Lの順に値を取り出し，計算する
+                // トップに置かれた数字が右側なのはコンパイルしやすくするため
+
+                // +
+                Opcode::Add => {
+                    // AWKは一つのオブジェクトに複数の名前が束縛されることはないため，
+                    // とくにGCの仕組みを考えたり，メモリリークの心配をしなくていい(はず)
+                    // だが，本当に大丈夫なのか
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.add(&r));
+                }
+                // -
+                Opcode::Sub => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.sub(&r));
+                }
+                // *
+                Opcode::Mul => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.mul(&r));
+                }
+                // /
+                Opcode::Div => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.div(&r));
+                }
+
+                //
+                //  Readline
+                //  標準入力から行を一行読み込み，fieldsに設定する．
+                //  行の読み込みに成功したらスタックに0をpushし，失敗(EOF)したら1をpushする．
+                //
                 Opcode::Readline => op_readline(self, reader),
                 Opcode::Print(n) => op_print(self, writer, *n),
             }
             self.pc += 1;
         }
-    }
-
-    pub fn print_state(&mut self) {
-        println!("Program:");
-        println!("{:?}\n", self.program);
-        println!("Stack:");
-        println!("{:?}", self.stack);
     }
 }
 
@@ -105,6 +133,11 @@ pub enum Opcode {
     Pop,
     Jump(usize),
     If(usize),
+    // Expression
+    Add,
+    Sub,
+    Mul,
+    Div,
     // AWK
     Readline,
     Print(usize),
@@ -114,7 +147,16 @@ pub enum Opcode {
 fn test_vm() {
     use std::str;
 
-    let prg = [Opcode::Push(Value::Num(1.0)), Opcode::Print(1), Opcode::End];
+    let prg = [
+        Opcode::Push(Value::Num(4.0)),
+        Opcode::Push(Value::Num(2.0)),
+        Opcode::Div,
+        Opcode::Push(Value::Num(1.0)),
+        Opcode::Push(Value::Num(2.0)),
+        Opcode::Add,
+        Opcode::Print(2),
+        Opcode::End,
+    ];
 
     let mut vm = VM::new(&prg);
 
@@ -123,5 +165,5 @@ fn test_vm() {
 
     vm.run(&mut reader, &mut writer);
 
-    assert_eq!("1\n", str::from_utf8(&writer).unwrap());
+    assert_eq!("3 2\n", str::from_utf8(&writer).unwrap());
 }
