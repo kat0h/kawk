@@ -111,6 +111,8 @@ pub enum Opcode {
 
 #[test]
 fn test_vm() {
+    use std::str;
+
     let prg = [
         Opcode::Push(Value::Num(1.0)),
         Opcode::Print(1),
@@ -118,13 +120,11 @@ fn test_vm() {
     ];
 
     let mut vm = VM::new(&prg);
-    let r = io::stdin();
-    let mut reader = r.lock();
 
-    let w = io::stdout();
-    let mut writer = w.lock();
-
+    let mut reader = "".as_bytes();
+    let mut writer = Vec::<u8>::new();
 
     vm.run(&mut reader, &mut writer);
-    vm.print_state();
+
+    assert_eq!("1\n", str::from_utf8(&writer).unwrap());
 }
