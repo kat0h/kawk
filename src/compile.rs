@@ -79,6 +79,7 @@ fn test_compile() {
         Opcode::Push(ast::Value::Num(2.0)),
         Opcode::Push(ast::Value::Num(1.0)),
         Opcode::Print(2),
+        Opcode::End,
     ];
     let actual = compile(&ast);
 
