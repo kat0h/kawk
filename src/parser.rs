@@ -7,10 +7,10 @@ pub fn parse(prog: &str) -> Result<Vec<ast::Item>, peg::error::ParseError<peg::s
 peg::parser! {
     pub grammar awk() for str {
         pub rule prog() -> ast::Program
-            = i:(item() ** ";") { i }
+            = _ i:(item() ** (_ ";" _)) _ { i }
 
         rule item() -> ast::Item
-            = pattern:pattern() action:action() { ast::Item { pattern, action } }
+            = pattern:pattern() _ action:action() { ast::Item { pattern, action } }
 
         rule pattern() -> ast::Pattern
             = precedence! {
@@ -19,11 +19,11 @@ peg::parser! {
             }
 
         rule action() -> ast::Action
-            = "{" a:(statement() ** ";") "}" { a }
+            = "{" _ a:(statement() ** (_ ";" _)) _ "}" { a }
 
         rule statement() -> ast::Statement
             = precedence! {
-                "print(" a:(expression() ** ",") ")" {
+                "print(" _ a:(expression() ** (_ "," _)) _ ")" {
                     ast::Statement::Print(a)
                 }
             }
@@ -36,12 +36,13 @@ peg::parser! {
         pub rule number() -> f64
             = n:$(['0'..='9']+) {? n.parse::<f64>().or(Err("i64")) }
 
+        rule _() = [' ' | '\t']*
     }
 }
 
 #[test]
 fn test_parser() {
-    let prg = "BEGIN{print(123,456)}";
+    let prg = " BEGIN { print( 123 , 456 ) } ";
     let expect = vec![ast::Item {
         pattern: ast::Pattern::Begin,
         action: vec![ast::Statement::Print(vec![
