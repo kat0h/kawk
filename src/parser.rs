@@ -37,6 +37,12 @@ peg::parser! {
         // 式
         rule expression() -> ast::Expression
             = precedence! {
+                l:(@) _ "+" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Add, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "-" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Sub, left: Box::new(l), right: Box::new(r), } }
+                --
+                l:(@) _ "*" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Mul, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "/" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Div, left: Box::new(l), right: Box::new(r), } }
+                --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
             }
 
@@ -51,11 +57,15 @@ peg::parser! {
 
 #[test]
 fn test_parser() {
-    let prg = " BEGIN { print( 123 , 456 ) } ";
+    let prg = " BEGIN { print( 123 + 333 , 456 ) } ";
     let expect = vec![ast::Item {
         pattern: ast::Pattern::Begin,
         action: vec![ast::Statement::Print(vec![
-            ast::Expression::Value(ast::Value::Num(123.0)),
+            ast::Expression::BinaryOp {
+                op: ast::Operator::Add,
+                left: Box::new(ast::Expression::Value(ast::Value::Num(123.0))),
+                right: Box::new(ast::Expression::Value(ast::Value::Num(333.0))),
+            },
             ast::Expression::Value(ast::Value::Num(456.0)),
         ])],
     }];
