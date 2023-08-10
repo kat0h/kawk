@@ -12,6 +12,7 @@ fn main() {
     // コマンド単体で呼ばれた際はヘルプメッセージを表示
     if args.len() == 1 {
         let binary_name = &args[0];
+        // usage: awk 'prog'
         println!("usage: {} 'prog'", binary_name);
         return;
     }
@@ -19,11 +20,12 @@ fn main() {
     let program = &args[1];
 
     // Parse program
-    // ここを綺麗に書き直したい
+    // ここを綺麗にフラットに書き直したい
     // Goのエラー処理みたいに書くべきなのか，そうではないのか
     let ast = parser::parse(program);
     if ast.is_err() {
         println!("Syntax Error!");
+        // Syntaxエラーの時はもっと詳細にエラーを出したいよね
         dbg!(&ast);
         return;
     }

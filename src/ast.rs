@@ -19,6 +19,19 @@ pub type Action = Vec<Statement>;
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     Value(Value),
+    BinaryOp {
+        op: Operator,
+        left: Box<Expression>,
+        right: Box<Expression>,
+    },
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Operator {
+    Add, // +
+    Sub, // -
+    Mul, // *
+    Div, // /
 }
 
 #[derive(Debug, PartialEq)]

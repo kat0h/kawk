@@ -1,6 +1,19 @@
 use crate::ast::Value;
 use crate::parser::awk::number;
 
+// Value
+// AWKの値を管理する
+// 新規作成
+//   Value::Num(f64)
+//   Value::Str(String)
+//   Value::None
+//
+// val.to_str(): 文字列化
+// val.to_float(): 数値化
+// val.is_true(): 真偽判定
+//
+// 仕様はPOSIXに由来します
+
 impl Value {
     // Value -> f64 / String
     pub fn to_str(&self) -> String {
