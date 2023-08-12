@@ -20,6 +20,7 @@ peg::parser! {
             = precedence! {
                 "BEGIN" { ast::Pattern::Begin }
                 "END" { ast::Pattern::End }
+                "" { ast::Pattern::Always }
             }
 
         // action は {} で囲われていて，それぞれの文は ; で区切られている
