@@ -17,6 +17,19 @@ fn main() {
         return;
     }
 
+    // Debug Level
+    // 1 -> AST
+    // 2 -> Byte Code
+    let debuglevel = if args.len() == 3 {
+        if &args[2] == "1" {
+            1
+        } else {
+            2
+        }
+    } else {
+        0
+    };
+
     let program = &args[1];
 
     // Parse program
@@ -30,9 +43,17 @@ fn main() {
         return;
     }
     let ast = ast.unwrap();
+    if debuglevel == 1 {
+        dbg!(ast);
+        return;
+    }
 
     // Compile program
     let vmprg = compile::compile(&ast);
+    if debuglevel == 2 {
+        dbg!(vmprg);
+        return;
+    }
 
     // Run Program
     let mut r = std::io::stdin().lock();
