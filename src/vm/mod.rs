@@ -33,6 +33,7 @@ impl VM<'_> {
                 Opcode::End => {
                     break;
                 }
+                Opcode::Nop => {}
                 Opcode::Push(a) => {
                     self.stack.push(a.clone());
                 }
@@ -129,6 +130,7 @@ fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
 #[derive(Debug, PartialEq)]
 pub enum Opcode {
     End,
+    Nop,
     Push(Value),
     Pop,
     Jump(usize),
