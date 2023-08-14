@@ -72,7 +72,31 @@ fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm) {
     }
 }
 
-fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {}
+fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
+    // BEGIN/END以外のパターンが存在するか確認
+    let items = ast
+        .iter()
+        .filter(|i| !matches!(i.pattern, ast::Pattern::Begin))
+        .filter(|i| !matches!(i.pattern, ast::Pattern::End))
+        .collect::<Vec<_>>();
+
+    if items.is_empty() {
+        return;
+    }
+
+    asm.push(OpcodeL::Label("loop".to_string()));
+    // 行を読み込む
+    asm.push(OpcodeL::Readline);
+    // EOF (スタックのトップが1.0)なら終了
+    asm.push(OpcodeL::If("theend".to_string()));
+
+    for item in items.into_iter() {
+        compile_action(&item.action, asm);
+    }
+
+    asm.push(OpcodeL::Jump("loop".to_string()));
+    asm.push(OpcodeL::Label("theend".to_string()));
+}
 
 fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm) {
     // fin BEGIN pattern
@@ -132,15 +156,20 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
     // 初めに全てのラベル位置を特定してジャンプ先の要素番号を特定する
 
     let mut labels: HashMap<String, usize> = HashMap::new();
-    for (i, op) in asm.iter().enumerate() {
-        if let OpcodeL::Label(labelname) = op {
-            labels.insert(labelname.to_string(), i);
-            a.remove(i);
+
+    // 計算量が大きいので見直す
+    while !a.iter().filter(|i| matches!(i, OpcodeL::Label(_))).collect::<Vec<_>>().is_empty() {
+        for (i, op) in a.iter().enumerate() {
+            if let OpcodeL::Label(labelname) = op {
+                labels.insert(labelname.to_string(), i);
+                a.remove(i);
+                break;
+            }
         }
     }
 
     let mut bytecode: VMProgram = vec![];
-    for op in asm.iter() {
+    for op in a.iter() {
         bytecode.push(match op {
             OpcodeL::End => Opcode::End,
             OpcodeL::Nop => Opcode::Nop,
