@@ -21,6 +21,9 @@ pub fn compile(ast: &ast::Program) -> VMProgram {
 
     // BEGINパターンを探しコンパイル
     compile_all_begin_pattern(ast, &mut vmprogram);
+    
+    // ENDパターンを探してコンパイル
+    compile_all_end_pattern(ast, &mut vmprogram);
 
     // 最後にENDを追加 (そうしないとVMが終了しない)
     vmprogram.push(Opcode::End);
@@ -34,6 +37,19 @@ fn compile_all_begin_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
     let items = ast
         .iter()
         .filter(|i| matches!(i.pattern, ast::Pattern::Begin))
+        .collect::<Vec<_>>();
+
+    for item in items.into_iter() {
+        // actionの列をコンパイル
+        compile_action(&item.action, vmprogram);
+    }
+}
+
+fn compile_all_end_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
+    // fin BEGIN pattern
+    let items = ast
+        .iter()
+        .filter(|i| matches!(i.pattern, ast::Pattern::End))
         .collect::<Vec<_>>();
 
     for item in items.into_iter() {
