@@ -3,6 +3,25 @@ use crate::ast::Value;
 
 use std::io::{BufRead, Write};
 
+// Opcodeに項目を追加するときはcompile.rsのOpcodeLも変更
+#[derive(Debug, PartialEq)]
+pub enum Opcode {
+    End,
+    Nop,
+    Push(Value),
+    Pop,
+    Jump(usize),
+    If(usize),
+    // Expression
+    Add,
+    Sub,
+    Mul,
+    Div,
+    // AWK
+    Readline,
+    Print(usize),
+}
+
 pub struct VM<'a> {
     program: &'a [Opcode],
     stack: Vec<Value>,
@@ -125,25 +144,6 @@ fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
         s = true;
     }
     writeln!(writer).unwrap();
-}
-
-// Opcodeに項目を追加するときはcompile.rsのOpcodeLも変更
-#[derive(Debug, PartialEq)]
-pub enum Opcode {
-    End,
-    Nop,
-    Push(Value),
-    Pop,
-    Jump(usize),
-    If(usize),
-    // Expression
-    Add,
-    Sub,
-    Mul,
-    Div,
-    // AWK
-    Readline,
-    Print(usize),
 }
 
 #[test]

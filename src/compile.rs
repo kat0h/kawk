@@ -158,7 +158,12 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
     let mut labels: HashMap<String, usize> = HashMap::new();
 
     // 計算量が大きいので見直す
-    while !a.iter().filter(|i| matches!(i, OpcodeL::Label(_))).collect::<Vec<_>>().is_empty() {
+    while !a
+        .iter()
+        .filter(|i| matches!(i, OpcodeL::Label(_)))
+        .collect::<Vec<_>>()
+        .is_empty()
+    {
         for (i, op) in a.iter().enumerate() {
             if let OpcodeL::Label(labelname) = op {
                 labels.insert(labelname.to_string(), i);
