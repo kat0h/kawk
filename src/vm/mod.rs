@@ -127,6 +127,7 @@ fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
     writeln!(writer).unwrap();
 }
 
+// Opcodeに項目を追加するときはcompile.rsのOpcodeLも変更
 #[derive(Debug, PartialEq)]
 pub enum Opcode {
     End,

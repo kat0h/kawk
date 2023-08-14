@@ -1,7 +1,29 @@
 use crate::ast;
+use crate::ast::Value;
 use crate::vm::Opcode;
 
 pub type VMProgram = Vec<Opcode>;
+type Asm = Vec<OpcodeL>;
+
+#[derive(Debug, PartialEq)]
+enum OpcodeL {
+    End,
+    Nop,
+    Push(Value),
+    Pop,
+    Jump(String),
+    If(String),
+    // Expression
+    Add,
+    Sub,
+    Mul,
+    Div,
+    // AWK
+    Readline,
+    Print(usize),
+    // ジャンプ先を示す
+    Label(String),
+}
 
 /*
  * メモ：
@@ -17,22 +39,25 @@ pub type VMProgram = Vec<Opcode>;
 pub fn compile(ast: &ast::Program) -> VMProgram {
     // そのうちはコンパイルエラーをResultで返すようにしたい
     // (エラーは呼び出し側で処理すべきなので)
-    let mut vmprogram: VMProgram = vec![];
+    let mut asm: Asm = vec![];
 
     // BEGINパターンを探しコンパイル
-    compile_all_begin_pattern(ast, &mut vmprogram);
-    
+    compile_all_begin_pattern(ast, &mut asm);
+
+    // Always，Expressionパターンを探してコンパイル
+    compile_normal_pattern(ast, &mut asm);
+
     // ENDパターンを探してコンパイル
-    compile_all_end_pattern(ast, &mut vmprogram);
+    compile_all_end_pattern(ast, &mut asm);
 
     // 最後にENDを追加 (そうしないとVMが終了しない)
-    vmprogram.push(Opcode::End);
+    asm.push(OpcodeL::End);
 
-    vmprogram
+    asm_to_vmprogram(&asm)
 }
 
 // 全てのBEGINパターンを探してコンパイルする
-fn compile_all_begin_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
+fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm) {
     // fin BEGIN pattern
     let items = ast
         .iter()
@@ -41,11 +66,13 @@ fn compile_all_begin_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, vmprogram);
+        compile_action(&item.action, asm);
     }
 }
 
-fn compile_all_end_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
+fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {}
+
+fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm) {
     // fin BEGIN pattern
     let items = ast
         .iter()
@@ -54,47 +81,73 @@ fn compile_all_end_pattern(ast: &ast::Program, vmprogram: &mut VMProgram) {
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, vmprogram);
+        compile_action(&item.action, asm);
     }
 }
 
 // action ::: {}で囲われた一連のコード
-fn compile_action(action: &ast::Action, vmprogram: &mut VMProgram) {
+fn compile_action(action: &ast::Action, asm: &mut Asm) {
     for statement in action.iter() {
         match statement {
             ast::Statement::Print(expressions) => {
-                // 表示する式を逆順に取り出し，pushしてから最後にOpcode::Print(len)
+                // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
                 for e in expressions.iter().rev() {
-                    compile_expression(e, vmprogram);
+                    compile_expression(e, asm);
                 }
-                vmprogram.push(Opcode::Print(expressions.len()));
+                asm.push(OpcodeL::Print(expressions.len()));
             }
         }
     }
 }
 
-fn compile_expression(expression: &ast::Expression, vmprogram: &mut VMProgram) {
+fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
     // 式をコンパイル
     // compile_expressionはeval関数のように再帰しながら式をコンパイルする
     match expression {
         ast::Expression::Value(v) => {
-            vmprogram.push(Opcode::Push(v.clone()));
+            asm.push(OpcodeL::Push(v.clone()));
         }
         ast::Expression::BinaryOp { op, left, right } => {
-            compile_expression(left, vmprogram);
-            compile_expression(right, vmprogram);
-            compile_operator(op, vmprogram);
+            compile_expression(left, asm);
+            compile_expression(right, asm);
+            compile_operator(op, asm);
         }
     }
 }
 
-fn compile_operator(op: &ast::Operator, vmprogram: &mut VMProgram) {
-    vmprogram.push(match op {
-        ast::Operator::Add => Opcode::Add,
-        ast::Operator::Sub => Opcode::Sub,
-        ast::Operator::Mul => Opcode::Mul,
-        ast::Operator::Div => Opcode::Div,
+fn compile_operator(op: &ast::Operator, asm: &mut Asm) {
+    asm.push(match op {
+        ast::Operator::Add => OpcodeL::Add,
+        ast::Operator::Sub => OpcodeL::Sub,
+        ast::Operator::Mul => OpcodeL::Mul,
+        ast::Operator::Div => OpcodeL::Div,
     })
+}
+
+fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
+    let mut bytecode: VMProgram = vec![];
+    for op in asm.iter() {
+        bytecode.push(match op {
+            OpcodeL::End => Opcode::End,
+            OpcodeL::Nop => Opcode::Nop,
+            OpcodeL::Push(value) => Opcode::Push(value.clone()),
+            OpcodeL::Pop => Opcode::Pop,
+            // TODO
+            OpcodeL::Jump(label) => Opcode::Jump(0),
+            OpcodeL::If(label) => Opcode::If(0),
+            // Expression
+            OpcodeL::Add => Opcode::Add,
+            OpcodeL::Sub => Opcode::Sub,
+            OpcodeL::Mul => Opcode::Mul,
+            OpcodeL::Div => Opcode::Div,
+            // AWK
+            OpcodeL::Readline => Opcode::Readline,
+            OpcodeL::Print(len) => Opcode::Print(*len),
+            // ジャンプ先を示す
+            OpcodeL::Label(_label) => unreachable!(),
+        })
+    }
+    bytecode
 }
 
 #[test]
@@ -121,15 +174,11 @@ fn test_compile() {
 fn test_compile2() {
     let ast = vec![ast::Item {
         pattern: ast::Pattern::Begin,
-        action: vec![
-            ast::Statement::Print(vec![
-                ast::Expression::BinaryOp {
-                    op: ast::Operator::Div,
-                    left: Box::new(ast::Expression::Value(ast::Value::Num(6.0))),
-                    right: Box::new(ast::Expression::Value(ast::Value::Num(2.0))),
-                }
-            ])
-        ],
+        action: vec![ast::Statement::Print(vec![ast::Expression::BinaryOp {
+            op: ast::Operator::Div,
+            left: Box::new(ast::Expression::Value(ast::Value::Num(6.0))),
+            right: Box::new(ast::Expression::Value(ast::Value::Num(2.0))),
+        }])],
     }];
     let expect = vec![
         Opcode::Push(ast::Value::Num(6.0)),
