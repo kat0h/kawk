@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ast;
 use crate::ast::Value;
 use crate::vm::Opcode;
@@ -5,7 +7,7 @@ use crate::vm::Opcode;
 pub type VMProgram = Vec<Opcode>;
 type Asm = Vec<OpcodeL>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum OpcodeL {
     End,
     Nop,
@@ -125,6 +127,18 @@ fn compile_operator(op: &ast::Operator, asm: &mut Asm) {
 }
 
 fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
+    let mut a = asm.to_vec();
+    // ラベル名の解決
+    // 初めに全てのラベル位置を特定してジャンプ先の要素番号を特定する
+
+    let mut labels: HashMap<String, usize> = HashMap::new();
+    for (i, op) in asm.iter().enumerate() {
+        if let OpcodeL::Label(labelname) = op {
+            labels.insert(labelname.to_string(), i);
+            a.remove(i);
+        }
+    }
+
     let mut bytecode: VMProgram = vec![];
     for op in asm.iter() {
         bytecode.push(match op {
@@ -133,8 +147,8 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
             OpcodeL::Push(value) => Opcode::Push(value.clone()),
             OpcodeL::Pop => Opcode::Pop,
             // TODO
-            OpcodeL::Jump(label) => Opcode::Jump(0),
-            OpcodeL::If(label) => Opcode::If(0),
+            OpcodeL::Jump(label) => Opcode::Jump(*labels.get(label).unwrap()),
+            OpcodeL::If(label) => Opcode::If(*labels.get(label).unwrap()),
             // Expression
             OpcodeL::Add => Opcode::Add,
             OpcodeL::Sub => Opcode::Sub,
