@@ -51,7 +51,7 @@ fn main() {
     // Compile program
     let vmprg = compile::compile(&ast);
     if debuglevel == 2 {
-        dbg!(vmprg);
+        show_vmprog(&vmprg);
         return;
     }
 
@@ -60,4 +60,35 @@ fn main() {
     let mut w = std::io::stdout().lock();
     let mut vm = vm::VM::new(&vmprg);
     vm.run(&mut r, &mut w);
+}
+
+fn show_vmprog(vmprog: &compile::VMProgram) {
+    for (i, opcode) in vmprog.iter().enumerate() {
+        let opc = match opcode {
+            vm::Opcode::End => "end",
+            vm::Opcode::Nop => "nop",
+            vm::Opcode::Push(_) => "push",
+            vm::Opcode::Pop => "pop",
+            vm::Opcode::Jump(_) => "jump",
+            vm::Opcode::If(_) => "if",
+            // Expression
+            vm::Opcode::Add => "add",
+            vm::Opcode::Sub => "sub",
+            vm::Opcode::Mul => "mul",
+            vm::Opcode::Div => "div",
+            // AWK
+            vm::Opcode::Readline => "readline",
+            vm::Opcode::Print(_) => "print",
+        };
+
+        let arg = match opcode {
+            vm::Opcode::Push(val) => val.to_str(),
+            vm::Opcode::Jump(i) => i.to_string(),
+            vm::Opcode::If(i) => i.to_string(),
+            vm::Opcode::Print(l) => l.to_string(),
+            _ => "".to_string(),
+        };
+
+        println!("{}\t{}\t{}", i, opc, &arg);
+    }
 }
