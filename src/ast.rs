@@ -25,6 +25,7 @@ pub enum Expression {
         right: Box<Expression>,
     },
     GetField(Box<Expression>),
+    Name(String),
 }
 
 #[derive(Debug, PartialEq)]

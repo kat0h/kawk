@@ -252,4 +252,3 @@ fn test_vm3() {
 
     assert_eq!("44\n", str::from_utf8(&writer).unwrap());
 }
-

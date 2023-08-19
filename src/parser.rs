@@ -47,6 +47,16 @@ peg::parser! {
                 "$" _ e:@ { ast::Expression::GetField(Box::new(e)) }
                 --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
+                n:name() { ast::Expression::Name(n) }
+            }
+
+        rule name() -> String
+            = n:$(['a'..='z' | 'A'..='Z' | _]['a'..='z' | 'A'..='Z' | '_' | '0'..='9']*) {?
+                if is_awk_reserved_name(n) {
+                    Err("Reserved name")
+                } else {
+                    Ok(n.to_string())
+                }
             }
 
         // 数字 (もっと詳しくパースできるように)
@@ -56,6 +66,15 @@ peg::parser! {
         // 空白文字を処理
         rule _() = [' ' | '\t']*
     }
+}
+
+/// 名前がAWKの予約語に含まれているかを判定
+pub fn is_awk_reserved_name(name: &str) -> bool {
+    let list = [
+        "BEGIN", "delete", "END", "function", "in", "printf", "break", "do", "exit", "getline",
+        "next", "return", "continue", "else", "for", "if", "print", "while",
+    ];
+    list.iter().any(|n| n == &name)
 }
 
 #[test]

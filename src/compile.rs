@@ -25,9 +25,8 @@ enum OpcodeL {
     Print(usize),
     GetField,
     // Variable
-    InitEnv(usize),
-    LoadVar(usize),
-    SetVar(usize),
+    LoadVar(String),
+    SetVar(String),
     // ジャンプ先を示す
     Label(String),
 }
@@ -147,6 +146,9 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
             compile_expression(e, asm);
             asm.push(OpcodeL::GetField);
         }
+        ast::Expression::Name(name) => {
+            asm.push(OpcodeL::LoadVar(name.to_string()));
+        }
     }
 }
 
@@ -182,7 +184,29 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
         }
     }
 
+    // 変数名の解決
+    let mut names: HashMap<String, usize> = HashMap::new();
+    // 全ての変数名を探索
+    for i in a.iter() {
+        if let OpcodeL::SetVar(name) = i {
+            if names.get(name).is_none() {
+                names.insert(name.to_string(), names.len());
+            }
+        }
+        if let OpcodeL::LoadVar(name) = i {
+            if names.get(name).is_none() {
+                names.insert(name.to_string(), names.len());
+            }
+        }
+    }
+
     let mut bytecode: VMProgram = vec![];
+
+    // 変数分の領域を確保
+    if names.len() >= 1 {
+        bytecode.push(Opcode::InitEnv(names.len()));
+    }
+
     for op in a.iter() {
         bytecode.push(match op {
             OpcodeL::End => Opcode::End,
@@ -202,9 +226,8 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
             OpcodeL::Print(len) => Opcode::Print(*len),
             OpcodeL::GetField => Opcode::GetField,
             // Variable
-            OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
-            OpcodeL::LoadVar(n) => Opcode::LoadVar(*n),
-            OpcodeL::SetVar(n) => Opcode::SetVar(*n),
+            OpcodeL::LoadVar(n) => Opcode::LoadVar(*names.get(n).unwrap()),
+            OpcodeL::SetVar(n) => Opcode::SetVar(*names.get(n).unwrap()),
             // ジャンプ先を示す
             OpcodeL::Label(_label) => unreachable!(),
         })
