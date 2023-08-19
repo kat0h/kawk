@@ -26,8 +26,8 @@ enum OpcodeL {
     GetField,
     // Variable
     InitEnv(usize),
-    LoadVal(usize),
-    SetVal(usize),
+    LoadVar(usize),
+    SetVar(usize),
     // ジャンプ先を示す
     Label(String),
 }
@@ -203,8 +203,8 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
             OpcodeL::GetField => Opcode::GetField,
             // Variable
             OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
-            OpcodeL::LoadVal(n) => Opcode::LoadVal(*n),
-            OpcodeL::SetVal(n) => Opcode::SetVal(*n),
+            OpcodeL::LoadVar(n) => Opcode::LoadVar(*n),
+            OpcodeL::SetVar(n) => Opcode::SetVar(*n),
             // ジャンプ先を示す
             OpcodeL::Label(_label) => unreachable!(),
         })

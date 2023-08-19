@@ -23,8 +23,8 @@ pub enum Opcode {
     GetField,
     // Variable
     InitEnv(usize),
-    LoadVal(usize),
-    SetVal(usize),
+    LoadVar(usize),
+    SetVar(usize),
 }
 
 pub struct VM<'a> {
@@ -129,10 +129,10 @@ impl VM<'_> {
                 Opcode::InitEnv(n) => {
                     self.env = vec![Value::None; *n];
                 }
-                Opcode::LoadVal(n) => {
+                Opcode::LoadVar(n) => {
                     self.stack.push(self.env[*n].clone());
                 }
-                Opcode::SetVal(n) => {
+                Opcode::SetVar(n) => {
                     let val = self.stack.pop().unwrap();
                     self.env[*n] = val;
                 }
@@ -229,3 +229,27 @@ fn test_vm2() {
 
     assert_eq!("2\n", str::from_utf8(&writer).unwrap());
 }
+
+#[test]
+fn test_vm3() {
+    use std::str;
+
+    let prg = [
+        Opcode::InitEnv(1),
+        Opcode::Push(Value::Num(44.0)),
+        Opcode::SetVar(0),
+        Opcode::LoadVar(0),
+        Opcode::Print(1),
+        Opcode::End,
+    ];
+
+    let mut vm = VM::new(&prg);
+
+    let mut reader = "".as_bytes();
+    let mut writer = Vec::<u8>::new();
+
+    vm.run(&mut reader, &mut writer);
+
+    assert_eq!("44\n", str::from_utf8(&writer).unwrap());
+}
+
