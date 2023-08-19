@@ -25,6 +25,7 @@ enum OpcodeL {
     Print(usize),
     GetField,
     // Variable
+    InitEnv(usize),
     LoadVar(String),
     SetVar(String),
     // ジャンプ先を示す
@@ -88,6 +89,8 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
         return;
     }
 
+    // TODO: Expressionパターンを処理できるようにする
+
     asm.push(OpcodeL::Label("loop".to_string()));
     // 行を読み込む
     asm.push(OpcodeL::Readline);
@@ -126,6 +129,11 @@ fn compile_action(action: &ast::Action, asm: &mut Asm) {
                 }
                 asm.push(OpcodeL::Print(expressions.len()));
             }
+            ast::Statement::Expression(expression) => {
+                // 式単体の場合，最後にpopする
+                compile_expression(expression, asm);
+                asm.push(OpcodeL::Pop);
+            }
         }
     }
 }
@@ -149,6 +157,12 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
         ast::Expression::Name(name) => {
             asm.push(OpcodeL::LoadVar(name.to_string()));
         }
+        ast::Expression::Assign { lval, expr } => {
+            compile_expression(expr, asm);
+            match lval {
+                ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
+            }
+        }
     }
 }
 
@@ -163,26 +177,6 @@ fn compile_operator(op: &ast::Operator, asm: &mut Asm) {
 
 fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
     let mut a = asm.to_vec();
-    // ラベル名の解決
-    // 初めに全てのラベル位置を特定してジャンプ先の要素番号を特定する
-
-    let mut labels: HashMap<String, usize> = HashMap::new();
-
-    // 計算量が大きいので見直す
-    while !a
-        .iter()
-        .filter(|i| matches!(i, OpcodeL::Label(_)))
-        .collect::<Vec<_>>()
-        .is_empty()
-    {
-        for (i, op) in a.iter().enumerate() {
-            if let OpcodeL::Label(labelname) = op {
-                labels.insert(labelname.to_string(), i);
-                a.remove(i);
-                break;
-            }
-        }
-    }
 
     // 変数名の解決
     let mut names: HashMap<String, usize> = HashMap::new();
@@ -200,12 +194,32 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
         }
     }
 
-    let mut bytecode: VMProgram = vec![];
-
     // 変数分の領域を確保
-    if names.len() >= 1 {
-        bytecode.push(Opcode::InitEnv(names.len()));
+    if !names.is_empty() {
+        a.insert(0, OpcodeL::InitEnv(names.len()));
     }
+
+    // ラベル名の解決
+    // 初めに全てのラベル位置を特定してジャンプ先の要素番号を特定する
+    // これ以降アセンブリに追加，削除してはいけない
+    let mut labels: HashMap<String, usize> = HashMap::new();
+    // 計算量が大きいので見直す
+    while !a
+        .iter()
+        .filter(|i| matches!(i, OpcodeL::Label(_)))
+        .collect::<Vec<_>>()
+        .is_empty()
+    {
+        for (i, op) in a.iter().enumerate() {
+            if let OpcodeL::Label(labelname) = op {
+                labels.insert(labelname.to_string(), i);
+                a.remove(i);
+                break;
+            }
+        }
+    }
+
+    let mut bytecode: VMProgram = vec![];
 
     for op in a.iter() {
         bytecode.push(match op {
@@ -226,6 +240,7 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
             OpcodeL::Print(len) => Opcode::Print(*len),
             OpcodeL::GetField => Opcode::GetField,
             // Variable
+            OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
             OpcodeL::LoadVar(n) => Opcode::LoadVar(*names.get(n).unwrap()),
             OpcodeL::SetVar(n) => Opcode::SetVar(*names.get(n).unwrap()),
             // ジャンプ先を示す

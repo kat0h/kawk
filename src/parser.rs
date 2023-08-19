@@ -33,11 +33,14 @@ peg::parser! {
                 "print(" _ a:(expression() ** (_ "," _)) _ ")" {
                     ast::Statement::Print(a)
                 }
+                e:expression() { ast::Statement::Expression(e) }
             }
 
         // 式
         rule expression() -> ast::Expression
             = precedence! {
+                l:lvalue() _ "=" _ e:@ { ast::Expression::Assign { lval: l, expr: Box::new(e)} }
+                --
                 l:(@) _ "+" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Add, left: Box::new(l), right: Box::new(r), } }
                 l:(@) _ "-" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Sub, left: Box::new(l), right: Box::new(r), } }
                 --
@@ -58,6 +61,9 @@ peg::parser! {
                     Ok(n.to_string())
                 }
             }
+
+        rule lvalue() -> ast::LValue
+            = l:name() { ast::LValue::Name(l) }
 
         // 数字 (もっと詳しくパースできるように)
         pub rule number() -> f64

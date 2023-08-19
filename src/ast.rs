@@ -26,6 +26,15 @@ pub enum Expression {
     },
     GetField(Box<Expression>),
     Name(String),
+    Assign {
+        lval: LValue,
+        expr: Box<Expression>,
+    },
+}
+
+#[derive(Debug, PartialEq)]
+pub enum LValue {
+    Name(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -39,6 +48,7 @@ pub enum Operator {
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     Print(Vec<Expression>),
+    Expression(Expression),
 }
 
 #[derive(Debug, PartialEq, Clone)]
