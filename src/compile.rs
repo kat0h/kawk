@@ -23,6 +23,7 @@ enum OpcodeL {
     // AWK
     Readline,
     Print(usize),
+    GetField,
     // ジャンプ先を示す
     Label(String),
 }
@@ -191,6 +192,7 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
             // AWK
             OpcodeL::Readline => Opcode::Readline,
             OpcodeL::Print(len) => Opcode::Print(*len),
+            OpcodeL::GetField => Opcode::GetField,
             // ジャンプ先を示す
             OpcodeL::Label(_label) => unreachable!(),
         })

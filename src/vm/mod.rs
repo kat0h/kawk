@@ -20,6 +20,7 @@ pub enum Opcode {
     // AWK
     Readline,
     Print(usize),
+    GetField,
 }
 
 pub struct VM<'a> {
@@ -112,6 +113,7 @@ impl VM<'_> {
                 //
                 Opcode::Readline => op_readline(self, reader),
                 Opcode::Print(n) => op_print(self, writer, *n),
+                Opcode::GetField => op_getfield_n(self),
             }
             self.pc += 1;
         }
@@ -144,6 +146,18 @@ fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
         s = true;
     }
     writeln!(writer).unwrap();
+}
+
+// スタックトップの値をnとし，$nの値を取得し，スタックのトップに配置する
+fn op_getfield_n(vm: &mut VM) {
+    let n = vm.stack.pop().unwrap().to_float() as usize;
+    if n == 0 {
+        vm.stack.push(Value::Str(vm.fields.join(" ")));
+    } else if n <= vm.fields.len() {
+        vm.stack.push(Value::Str(vm.fields[n - 1].clone()));
+    } else {
+        vm.stack.push(Value::Str("".to_string()));
+    }
 }
 
 #[test]

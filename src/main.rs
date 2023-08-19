@@ -1,5 +1,3 @@
-use std::io;
-
 mod ast;
 mod compile;
 mod parser;
@@ -79,6 +77,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             // AWK
             vm::Opcode::Readline => "readline",
             vm::Opcode::Print(_) => "print",
+            vm::Opcode::GetField => "getfield"
         };
 
         let arg = match opcode {
