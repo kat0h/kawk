@@ -139,6 +139,10 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
             compile_expression(right, asm);
             compile_operator(op, asm);
         }
+        ast::Expression::GetField(e) => {
+            compile_expression(e, asm);
+            asm.push(OpcodeL::GetField);
+        }
     }
 }
 

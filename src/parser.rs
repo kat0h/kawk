@@ -44,6 +44,8 @@ peg::parser! {
                 l:(@) _ "*" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Mul, left: Box::new(l), right: Box::new(r), } }
                 l:(@) _ "/" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Div, left: Box::new(l), right: Box::new(r), } }
                 --
+                "$" _ e:@ { ast::Expression::GetField(Box::new(e)) }
+                --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
             }
 
