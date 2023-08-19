@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 peg = "0.8.1"
+
+[profile.release]
+opt-level = 3

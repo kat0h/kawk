@@ -18,11 +18,14 @@ fn main() {
     // Debug Level
     // 1 -> AST
     // 2 -> Byte Code
+    // 3 -> print stack and env
     let debuglevel = if args.len() == 3 {
         if &args[2] == "1" {
             1
-        } else {
+        } else if &args[2] == "2" {
             2
+        } else {
+            3
         }
     } else {
         0
@@ -58,6 +61,10 @@ fn main() {
     let mut w = std::io::stdout().lock();
     let mut vm = vm::VM::new(&vmprg);
     vm.run(&mut r, &mut w);
+
+    if debuglevel == 3 {
+        vm.show_stack_and_env();
+    }
 }
 
 fn show_vmprog(vmprog: &compile::VMProgram) {
@@ -74,6 +81,17 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Sub => "sub",
             vm::Opcode::Mul => "mul",
             vm::Opcode::Div => "div",
+            vm::Opcode::Pow => "Pow",
+            vm::Opcode::Mod => "Mod",
+            vm::Opcode::Cat => "Cat",
+            vm::Opcode::And => "And",
+            vm::Opcode::Or => "Or",
+            vm::Opcode::LessThan => "LessThan",
+            vm::Opcode::LessEqualThan => "LessEqualThan",
+            vm::Opcode::NotEqual => "NotEqual",
+            vm::Opcode::Equal => "Equal",
+            vm::Opcode::GreaterThan => "GreaterThan",
+            vm::Opcode::GreaterEqualThan => "GreaterEqualThan",
             // AWK
             vm::Opcode::Readline => "readline",
             vm::Opcode::Print(_) => "print",

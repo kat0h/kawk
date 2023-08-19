@@ -43,6 +43,17 @@ pub enum Operator {
     Sub, // -
     Mul, // *
     Div, // /
+    Pow, // ^
+    Mod, // %
+    Cat, // string concat
+    And, // &&
+    Or, // ||
+    LessThan, // <
+    LessEqualThan, // <=
+    NotEqual, // !=
+    Equal, // ==
+    GreaterThan, // >
+    GreaterEqualThan, // >=
 }
 
 #[derive(Debug, PartialEq)]

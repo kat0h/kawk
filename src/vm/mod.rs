@@ -17,6 +17,17 @@ pub enum Opcode {
     Sub,
     Mul,
     Div,
+    Pow,
+    Mod,
+    Cat,
+    And,
+    Or,
+    LessThan,
+    LessEqualThan,
+    NotEqual,
+    Equal,
+    GreaterThan,
+    GreaterEqualThan,
     // AWK
     Readline,
     Print(usize),
@@ -111,6 +122,62 @@ impl VM<'_> {
                     let l = self.stack.pop().unwrap();
                     self.stack.push(l.div(&r));
                 }
+                // ^
+                Opcode::Pow => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.pow(&r));
+                }
+                Opcode::Mod => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.module(&r));
+                }
+                Opcode::Cat => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.concat(&r));
+                }
+                Opcode::And => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.and(&r));
+                }
+                Opcode::Or => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.or(&r));
+                }
+                Opcode::LessThan => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.lessthan(&r));
+                }
+                Opcode::LessEqualThan => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.lessequalthan(&r));
+                }
+                Opcode::NotEqual => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.notequal(&r));
+                }
+                Opcode::Equal => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.equal(&r));
+                }
+                Opcode::GreaterThan => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.greaterthan(&r));
+                }
+                Opcode::GreaterEqualThan => {
+                    let r = self.stack.pop().unwrap();
+                    let l = self.stack.pop().unwrap();
+                    self.stack.push(l.greaterequalthan(&r));
+                }
 
                 //
                 //  Readline
@@ -139,6 +206,13 @@ impl VM<'_> {
             }
             self.pc += 1;
         }
+    }
+
+    pub fn show_stack_and_env(self) {
+        println!("STACK");
+        dbg!(&self.stack);
+        println!("ENVIRONMENT");
+        dbg!(&self.env);
     }
 }
 
