@@ -41,20 +41,37 @@ peg::parser! {
             = precedence! {
                 l:lvalue() _ "=" _ e:@ { ast::Expression::Assign { lval: l, expr: Box::new(e)} }
                 --
+                l:(@) _ "||" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Or, left: Box::new(l), right: Box::new(r), } }
+                --
+                l:(@) _ "&&" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::And, left: Box::new(l), right: Box::new(r), } }
+                --
+                l:(@) _ "<" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::LessThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "<=" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::LessEqualThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "!=" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::NotEqual, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "==" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Equal, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ ">" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::GreaterThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ ">=" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::GreaterEqualThan, left: Box::new(l), right: Box::new(r), } }
+                --
+                l:(@) _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Cat, left: Box::new(l), right: Box::new(r), } }
+                --
                 l:(@) _ "+" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Add, left: Box::new(l), right: Box::new(r), } }
                 l:(@) _ "-" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Sub, left: Box::new(l), right: Box::new(r), } }
                 --
                 l:(@) _ "*" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Mul, left: Box::new(l), right: Box::new(r), } }
                 l:(@) _ "/" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Div, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "%" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Mod, left: Box::new(l), right: Box::new(r), } }
+                --
+                l:@ _ "^" _ r:(@) { ast::Expression::BinaryOp { op: ast::Operator::Pow, left: Box::new(l), right: Box::new(r), } }
                 --
                 "$" _ e:@ { ast::Expression::GetField(Box::new(e)) }
                 --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
                 n:name() { ast::Expression::Name(n) }
+                "(" _ e:expression() _ ")" { e }
             }
 
         rule name() -> String
-            = n:$(['a'..='z' | 'A'..='Z' | _]['a'..='z' | 'A'..='Z' | '_' | '0'..='9']*) {?
+            = n:$(['a'..='z' | 'A'..='Z' | '_']['a'..='z' | 'A'..='Z' | '_' | '0'..='9']*) {?
                 if is_awk_reserved_name(n) {
                     Err("Reserved name")
                 } else {
