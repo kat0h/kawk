@@ -21,6 +21,10 @@ pub enum Opcode {
     Readline,
     Print(usize),
     GetField,
+    // Variable
+    InitEnv(usize),
+    LoadVal(usize),
+    SetVal(usize),
 }
 
 pub struct VM<'a> {
@@ -30,6 +34,7 @@ pub struct VM<'a> {
 
     fields: Vec<String>,
     nf: Value,
+    env: Vec<Value>,
 }
 
 // TODO
@@ -44,6 +49,7 @@ impl VM<'_> {
 
             fields: vec![],
             nf: Value::Num(0.0),
+            env: vec![],
         }
     }
 
@@ -114,6 +120,22 @@ impl VM<'_> {
                 Opcode::Readline => op_readline(self, reader),
                 Opcode::Print(n) => op_print(self, writer, *n),
                 Opcode::GetField => op_getfield_n(self),
+
+                //
+                // 変数
+                //   InitEnv(n): n個分の変数の領域を確保する
+                //   LoadVal(n): n番目の変数の値をスタックのトップに積む
+                //   SetVal(n): スタックトップの値をn番目の変数に設定する
+                Opcode::InitEnv(n) => {
+                    self.env = vec![Value::None; *n];
+                }
+                Opcode::LoadVal(n) => {
+                    self.stack.push(self.env[*n].clone());
+                }
+                Opcode::SetVal(n) => {
+                    let val = self.stack.pop().unwrap();
+                    self.env[*n] = val;
+                }
             }
             self.pc += 1;
         }
@@ -183,4 +205,27 @@ fn test_vm() {
     vm.run(&mut reader, &mut writer);
 
     assert_eq!("3 2\n", str::from_utf8(&writer).unwrap());
+}
+
+#[test]
+fn test_vm2() {
+    use std::str;
+
+    let prg = [
+        Opcode::Readline,
+        Opcode::Pop,
+        Opcode::Push(Value::Num(2.0)),
+        Opcode::GetField,
+        Opcode::Print(1),
+        Opcode::End,
+    ];
+
+    let mut vm = VM::new(&prg);
+
+    let mut reader = "1 2".as_bytes();
+    let mut writer = Vec::<u8>::new();
+
+    vm.run(&mut reader, &mut writer);
+
+    assert_eq!("2\n", str::from_utf8(&writer).unwrap());
 }

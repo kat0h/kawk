@@ -78,6 +78,10 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Readline => "readline",
             vm::Opcode::Print(_) => "print",
             vm::Opcode::GetField => "getfield",
+            // Variable
+            vm::Opcode::InitEnv(_) => "initenv",
+            vm::Opcode::LoadVal(_) => "loadval",
+            vm::Opcode::SetVal(_) => "setval",
         };
 
         let arg = match opcode {
@@ -85,6 +89,9 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Jump(i) => i.to_string(),
             vm::Opcode::If(i) => i.to_string(),
             vm::Opcode::Print(l) => l.to_string(),
+            vm::Opcode::InitEnv(n) => n.to_string(),
+            vm::Opcode::LoadVal(n) => n.to_string(),
+            vm::Opcode::SetVal(n) => n.to_string(),
             _ => "".to_string(),
         };
 
