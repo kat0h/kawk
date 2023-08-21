@@ -76,6 +76,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Pop => "pop",
             vm::Opcode::Jump(_) => "jump",
             vm::Opcode::If(_) => "if",
+            vm::Opcode::NIf(_) => "nif",
             // Expression
             vm::Opcode::Add => "add",
             vm::Opcode::Sub => "sub",
@@ -106,6 +107,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Push(val) => val.to_str(),
             vm::Opcode::Jump(i) => i.to_string(),
             vm::Opcode::If(i) => i.to_string(),
+            vm::Opcode::NIf(i) => i.to_string(),
             vm::Opcode::Print(l) => l.to_string(),
             vm::Opcode::InitEnv(n) => n.to_string(),
             vm::Opcode::LoadVar(n) => n.to_string(),

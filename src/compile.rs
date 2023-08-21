@@ -15,6 +15,7 @@ enum OpcodeL {
     Pop,
     Jump(String),
     If(String),
+    NIf(String),
     // Expression
     Add,
     Sub,
@@ -100,16 +101,25 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
         return;
     }
 
-    // TODO: Expressionパターンを処理できるようにする
-
     asm.push(OpcodeL::Label("loop".to_string()));
     // 行を読み込む
     asm.push(OpcodeL::Readline);
     // EOF (スタックのトップが1.0)なら終了
     asm.push(OpcodeL::If("theend".to_string()));
 
+    let mut expression_index = 0;
     for item in items.into_iter() {
-        compile_action(&item.action, asm);
+        if let ast::Pattern::Expression(e) = &item.pattern {
+            let label = format!("exp{}", expression_index);
+            compile_expression(e, asm);
+            asm.push(OpcodeL::NIf(label.to_string()));
+            compile_action(&item.action, asm);
+            asm.push(OpcodeL::Label(label));
+            expression_index += 1;
+        } else {
+            compile_action(&item.action, asm);
+        }
+
     }
 
     asm.push(OpcodeL::Jump("loop".to_string()));
@@ -252,6 +262,7 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
             // TODO
             OpcodeL::Jump(label) => Opcode::Jump(*labels.get(label).unwrap()),
             OpcodeL::If(label) => Opcode::If(*labels.get(label).unwrap()),
+            OpcodeL::NIf(label) => Opcode::NIf(*labels.get(label).unwrap()),
             // Expression
             OpcodeL::Add => Opcode::Add,
             OpcodeL::Sub => Opcode::Sub,

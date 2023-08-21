@@ -20,6 +20,7 @@ peg::parser! {
             = precedence! {
                 "BEGIN" { ast::Pattern::Begin }
                 "END" { ast::Pattern::End }
+                e:expression() { ast::Pattern::Expression(e) }
                 "" { ast::Pattern::Always }
             }
 

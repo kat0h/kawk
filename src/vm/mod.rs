@@ -12,6 +12,7 @@ pub enum Opcode {
     Pop,
     Jump(usize),
     If(usize),
+    NIf(usize),
     // Expression
     Add,
     Sub,
@@ -87,6 +88,16 @@ impl VM<'_> {
                 //
                 Opcode::If(pc) => {
                     if self.stack.pop().unwrap().is_true() {
+                        self.pc = *pc;
+                        continue;
+                    }
+                }
+                //
+                // NIf
+                // スタックの一番上がfaltyなとき指定されたポインタにジャンプ
+                //
+                Opcode::NIf(pc) => {
+                    if !self.stack.pop().unwrap().is_true() {
                         self.pc = *pc;
                         continue;
                     }
