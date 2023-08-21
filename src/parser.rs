@@ -44,6 +44,60 @@ peg::parser! {
         rule expression() -> ast::Expression
             = precedence! {
                 l:lvalue() _ "=" _ e:@ { ast::Expression::Assign { lval: l, expr: Box::new(e)} }
+                l:lvalue() _ "+=" _ e:@ {
+                    ast::Expression::Assign {
+                        lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
+                            op: ast::Operator::Add,
+                            left: Box::new(ast::Expression::LValue(l)),
+                            right: Box::new(e),
+                        })
+                    }
+                }
+                l:lvalue() _ "-=" _ e:@ {
+                    ast::Expression::Assign {
+                        lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
+                            op: ast::Operator::Sub,
+                            left: Box::new(ast::Expression::LValue(l)),
+                            right: Box::new(e),
+                        })
+                    }
+                }
+                l:lvalue() _ "*=" _ e:@ {
+                    ast::Expression::Assign {
+                        lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
+                            op: ast::Operator::Mul,
+                            left: Box::new(ast::Expression::LValue(l)),
+                            right: Box::new(e),
+                        })
+                    }
+                }
+                l:lvalue() _ "/=" _ e:@ {
+                    ast::Expression::Assign {
+                        lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
+                            op: ast::Operator::Div,
+                            left: Box::new(ast::Expression::LValue(l)),
+                            right: Box::new(e),
+                        })
+                    }
+                }
+                l:lvalue() _ "%=" _ e:@ {
+                    ast::Expression::Assign {
+                        lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
+                            op: ast::Operator::Mod,
+                            left: Box::new(ast::Expression::LValue(l)),
+                            right: Box::new(e),
+                        })
+                    }
+                }
+                l:lvalue() _ "^=" _ e:@ {
+                    ast::Expression::Assign {
+                        lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
+                            op: ast::Operator::Pow,
+                            left: Box::new(ast::Expression::LValue(l)),
+                            right: Box::new(e),
+                        })
+                    }
+                }
                 --
                 l:(@) _ "||" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Or, left: Box::new(l), right: Box::new(r), } }
                 --
@@ -70,7 +124,7 @@ peg::parser! {
                 "$" _ e:@ { ast::Expression::GetField(Box::new(e)) }
                 --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
-                n:name() { ast::Expression::Name(n) }
+                n:lvalue() { ast::Expression::LValue(n) }
                 "(" _ e:expression() _ ")" { e }
             }
 

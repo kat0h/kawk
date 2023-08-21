@@ -173,9 +173,9 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
             compile_expression(e, asm);
             asm.push(OpcodeL::GetField);
         }
-        ast::Expression::Name(name) => {
-            asm.push(OpcodeL::LoadVar(name.to_string()));
-        }
+        ast::Expression::LValue(lvalue) => match lvalue {
+            ast::LValue::Name(name) => asm.push(OpcodeL::LoadVar(name.to_string())),
+        },
         ast::Expression::Assign { lval, expr } => {
             compile_expression(expr, asm);
             match lval {

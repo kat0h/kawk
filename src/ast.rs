@@ -25,14 +25,14 @@ pub enum Expression {
         right: Box<Expression>,
     },
     GetField(Box<Expression>),
-    Name(String),
+    LValue(LValue),
     Assign {
         lval: LValue,
         expr: Box<Expression>,
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LValue {
     Name(String),
 }
