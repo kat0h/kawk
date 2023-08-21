@@ -119,7 +119,6 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
         } else {
             compile_action(&item.action, asm);
         }
-
     }
 
     asm.push(OpcodeL::Jump("loop".to_string()));
