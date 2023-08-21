@@ -70,12 +70,15 @@ impl Value {
     pub fn pow(&self, val: &Value) -> Value {
         Value::Num(self.to_float().powf(val.to_float()))
     }
+    #[allow(dead_code)]
     pub fn not(&self) -> Value {
         Value::Num(if self.is_true() { 0.0 } else { 1.0 })
     }
+    #[allow(dead_code)]
     pub fn plus(&self) -> Value {
         Value::Num(self.to_float())
     }
+    #[allow(dead_code)]
     pub fn minus(&self) -> Value {
         Value::Num(self.to_float() * -1.0)
     }

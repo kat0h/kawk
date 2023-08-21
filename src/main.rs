@@ -75,7 +75,6 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
     for (i, opcode) in vmprog.iter().enumerate() {
         let opc = match opcode {
             vm::Opcode::End => "end",
-            vm::Opcode::Nop => "nop",
             vm::Opcode::Push(_) => "push",
             vm::Opcode::Pop => "pop",
             vm::Opcode::Jump(_) => "jump",

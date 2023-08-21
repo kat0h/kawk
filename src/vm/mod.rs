@@ -7,7 +7,6 @@ use std::io::{BufRead, Write};
 #[derive(Debug, PartialEq)]
 pub enum Opcode {
     End,
-    Nop,
     Push(Value),
     Pop,
     Jump(usize),
@@ -71,7 +70,6 @@ impl VM<'_> {
                 Opcode::End => {
                     break;
                 }
-                Opcode::Nop => {}
                 Opcode::Push(a) => {
                     self.stack.push(a.clone());
                 }

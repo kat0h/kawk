@@ -10,7 +10,6 @@ type Asm = Vec<OpcodeL>;
 #[derive(Debug, PartialEq, Clone)]
 enum OpcodeL {
     End,
-    Nop,
     Push(Value),
     Pop,
     Jump(String),
@@ -255,7 +254,6 @@ fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
     for op in a.iter() {
         bytecode.push(match op {
             OpcodeL::End => Opcode::End,
-            OpcodeL::Nop => Opcode::Nop,
             OpcodeL::Push(value) => Opcode::Push(value.clone()),
             OpcodeL::Pop => Opcode::Pop,
             // TODO
