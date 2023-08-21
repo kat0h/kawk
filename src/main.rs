@@ -37,9 +37,14 @@ fn main() {
     // ここを綺麗にフラットに書き直したい
     // Goのエラー処理みたいに書くべきなのか，そうではないのか
     let ast = parser::parse(program);
-    if ast.is_err() {
-        println!("Syntax Error!");
+    if let Err(err) = &ast {
+        let line = err.location.line;
+        let col = err.location.column;
+        let offset = err.location.offset;
+        eprintln!("Syntax Error!");
         // Syntaxエラーの時はもっと詳細にエラーを出したいよね
+        eprintln!("{}", program.split('\n').collect::<Vec<&str>>()[line - 1]);
+        eprintln!("{}^", " ".to_string().repeat(col-1));
         dbg!(&ast);
         return;
     }
