@@ -134,6 +134,7 @@ peg::parser! {
                 "$" _ e:@ { ast::Expression::GetField(Box::new(e)) }
                 --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
+                n:string() { ast::Expression::Value(ast::Value::Str(n)) }
                 n:lvalue() { ast::Expression::LValue(n) }
                 "(" _ e:expression() _ ")" { e }
             }
@@ -153,6 +154,10 @@ peg::parser! {
         // 数字 (もっと詳しくパースできるように)
         pub rule number() -> f64
             = n:$(['0'..='9']+) {? n.parse::<f64>().or(Err("i64")) }
+
+        // 文字列
+        rule string() -> String
+            = "\"" s:$([^'"']*) "\"" { s.to_string() }
 
         // 空白文字を処理
         rule _() = [' ' | '\t']*
