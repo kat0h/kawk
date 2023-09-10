@@ -60,6 +60,10 @@ pub enum Operator {
 pub enum Statement {
     Print(Vec<Expression>),
     Expression(Expression),
+    While {
+        exp: Expression,
+        stat: Action
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

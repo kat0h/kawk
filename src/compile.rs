@@ -7,6 +7,11 @@ use crate::vm::Opcode;
 pub type VMProgram = Vec<Opcode>;
 type Asm = Vec<OpcodeL>;
 
+struct CompileEnv {
+    // while文が使ったラベルのカウント
+    while_label_count: usize
+}
+
 #[derive(Debug, PartialEq, Clone)]
 enum OpcodeL {
     End,
@@ -59,23 +64,28 @@ pub fn compile(ast: &ast::Program) -> VMProgram {
     // (エラーは呼び出し側で処理すべきなので)
     let mut asm: Asm = vec![];
 
+    // コンパイル時環境
+    let mut env = CompileEnv {
+        while_label_count: 0
+    };
+
     // BEGINパターンを探しコンパイル
-    compile_all_begin_pattern(ast, &mut asm);
+    compile_all_begin_pattern(ast, &mut asm, &mut env);
 
     // Always，Expressionパターンを探してコンパイル
-    compile_normal_pattern(ast, &mut asm);
+    compile_normal_pattern(ast, &mut asm, &mut env);
 
     // ENDパターンを探してコンパイル
-    compile_all_end_pattern(ast, &mut asm);
+    compile_all_end_pattern(ast, &mut asm, &mut env);
 
     // 最後にENDを追加 (そうしないとVMが終了しない)
     asm.push(OpcodeL::End);
 
-    asm_to_vmprogram(&asm)
+    asm_to_vmprogram(&asm, &mut env)
 }
 
 // 全てのBEGINパターンを探してコンパイルする
-fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm) {
+fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) {
     // fin BEGIN pattern
     let items = ast
         .iter()
@@ -84,11 +94,12 @@ fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm) {
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm);
+        compile_action(&item.action, asm, env);
     }
 }
 
-fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
+// 全ての通常パターンをコンパイルする
+fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) {
     // BEGIN/END以外のパターンが存在するか確認
     let items = ast
         .iter()
@@ -108,15 +119,18 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
 
     let mut expression_index = 0;
     for item in items.into_iter() {
+        // 式パターン
         if let ast::Pattern::Expression(e) = &item.pattern {
             let label = format!("exp{}", expression_index);
-            compile_expression(e, asm);
+            compile_expression(e, asm, env);
             asm.push(OpcodeL::NIf(label.to_string()));
-            compile_action(&item.action, asm);
+            compile_action(&item.action, asm, env);
             asm.push(OpcodeL::Label(label));
             expression_index += 1;
+
+        // Alwaysパターン
         } else {
-            compile_action(&item.action, asm);
+            compile_action(&item.action, asm, env);
         }
     }
 
@@ -124,7 +138,7 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm) {
     asm.push(OpcodeL::Label("theend".to_string()));
 }
 
-fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm) {
+fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) {
     // fin BEGIN pattern
     let items = ast
         .iter()
@@ -133,31 +147,49 @@ fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm) {
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm);
+        compile_action(&item.action, asm, env);
     }
 }
 
 // action ::: {}で囲われた一連のコード
-fn compile_action(action: &ast::Action, asm: &mut Asm) {
+fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) {
     for statement in action.iter() {
         match statement {
+
+            // print文
             ast::Statement::Print(expressions) => {
                 // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
                 for e in expressions.iter().rev() {
-                    compile_expression(e, asm);
+                    compile_expression(e, asm, env);
                 }
                 asm.push(OpcodeL::Print(expressions.len()));
             }
+
+            // 式
             ast::Statement::Expression(expression) => {
                 // 式単体の場合，最後にpopする
-                compile_expression(expression, asm);
+                compile_expression(expression, asm, env);
                 asm.push(OpcodeL::Pop);
+            }
+
+            // while文
+            ast::Statement::While { exp, stat } => {
+                // while文用のラベルを使う
+                let label = env.while_label_count;
+                env.while_label_count += 1;
+
+                asm.push(OpcodeL::Label(format!("while_s_{label}")));
+                compile_expression(exp, asm, env);
+                asm.push(OpcodeL::NIf(format!("while_e_{label}")));
+                compile_action(stat, asm, env);
+                asm.push(OpcodeL::Jump(format!("while_s_{label}")));
+                asm.push(OpcodeL::Label(format!("while_e_{label}")));
             }
         }
     }
 }
 
-fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
+fn compile_expression(expression: &ast::Expression, asm: &mut Asm, _env: &mut CompileEnv) {
     // 式をコンパイル
     // compile_expressionはeval関数のように再帰しながら式をコンパイルする
     match expression {
@@ -165,19 +197,19 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm) {
             asm.push(OpcodeL::Push(v.clone()));
         }
         ast::Expression::BinaryOp { op, left, right } => {
-            compile_expression(left, asm);
-            compile_expression(right, asm);
+            compile_expression(left, asm, _env);
+            compile_expression(right, asm, _env);
             compile_operator(op, asm);
         }
         ast::Expression::GetField(e) => {
-            compile_expression(e, asm);
+            compile_expression(e, asm, _env);
             asm.push(OpcodeL::GetField);
         }
         ast::Expression::LValue(lvalue) => match lvalue {
             ast::LValue::Name(name) => asm.push(OpcodeL::LoadVar(name.to_string())),
         },
         ast::Expression::Assign { lval, expr } => {
-            compile_expression(expr, asm);
+            compile_expression(expr, asm, _env);
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
             }
@@ -205,7 +237,7 @@ fn compile_operator(op: &ast::Operator, asm: &mut Asm) {
     })
 }
 
-fn asm_to_vmprogram(asm: &Asm) -> VMProgram {
+fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
     let mut a = asm.to_vec();
 
     // 変数名の解決

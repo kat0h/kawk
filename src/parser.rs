@@ -31,12 +31,22 @@ peg::parser! {
         // print文 POSIXでは括弧の前に空白を置くことが許可される
         rule statement() -> ast::Statement
             = precedence! {
+                // 式
                 e:expression() { ast::Statement::Expression(e) }
+                // 括弧ありprint文
                 "print" _ "(" _ a:(expression() ** (_ "," _)) _ ")" {
                     ast::Statement::Print(a)
                 }
+                // 括弧なしprint文
                 "print" _ a:(expression() ** (_ "," _)) {
                     ast::Statement::Print(a)
+                }
+                // while文
+                "while" _ "(" e:expression() _ ")" _ s:action() {
+                    ast::Statement::While {
+                        exp: e,
+                        stat: s
+                    }
                 }
             }
 
