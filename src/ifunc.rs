@@ -1,5 +1,5 @@
 use crate::vm::VM;
-use crate::vm::ifunc::ifunc_sin;
+use crate::vm::ifunc;
 // 内蔵関数の定義
 
 
@@ -12,7 +12,8 @@ struct IFunc {
 }
 
 const INTERNAL_FUNC: &[IFunc] = &[
-    IFunc { name: "sin", func: ifunc_sin, arglen: 1 },
+    IFunc { name: "sin", func: ifunc::ifunc_sin, arglen: 1 },
+    IFunc { name: "cos", func: ifunc::ifunc_cos, arglen: 1 },
 ];
 
 pub fn get_index_from_name(name: &str) -> Option<usize> {
