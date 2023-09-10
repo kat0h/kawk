@@ -30,6 +30,10 @@ pub enum Expression {
         lval: LValue,
         expr: Box<Expression>,
     },
+    CallIFunc {
+        name: String,
+        args: Vec<Expression>
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

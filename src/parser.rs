@@ -1,4 +1,5 @@
 use crate::ast;
+use crate::ifunc::get_index_from_name;
 
 pub fn parse(prog: &str) -> Result<Vec<ast::Item>, peg::error::ParseError<peg::str::LineCol>> {
     awk::prog(prog)
@@ -135,8 +136,21 @@ peg::parser! {
                 --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
                 n:string() { ast::Expression::Value(ast::Value::Str(n)) }
+                e:internal_func_call() { e }
                 n:lvalue() { ast::Expression::LValue(n) }
                 "(" _ e:expression() _ ")" { e }
+            }
+
+        rule internal_func_call() -> ast::Expression
+            = n:name() "(" a:(expression() ** (_ "," _)) ")" {?
+                if get_index_from_name(&n).is_some() {
+                    Ok(ast::Expression::CallIFunc {
+                        name: n,
+                        args: a
+                    })
+                } else {
+                    Err("Not a internal command")
+                }
             }
 
         rule name() -> String

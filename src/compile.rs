@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::ast;
 use crate::ast::Value;
 use crate::vm::Opcode;
+use crate::ifunc::get_index_from_name;
 
 pub type VMProgram = Vec<Opcode>;
 type Asm = Vec<OpcodeL>;
@@ -20,6 +21,7 @@ enum OpcodeL {
     Jump(String),
     If(String),
     NIf(String),
+    Call(usize),
     // Expression
     Add,
     Sub,
@@ -214,6 +216,14 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm, _env: &mut Co
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
             }
         }
+        ast::Expression::CallIFunc { name, args } => {
+            for e in args.iter().rev() {
+                compile_expression(e, asm, _env);
+            }
+            // TODO
+            // ここで引数の個数はチェックしたい
+            asm.push(OpcodeL::Call(get_index_from_name(name).unwrap()));
+        }
     }
 }
 
@@ -292,6 +302,7 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             OpcodeL::Jump(label) => Opcode::Jump(*labels.get(label).unwrap()),
             OpcodeL::If(label) => Opcode::If(*labels.get(label).unwrap()),
             OpcodeL::NIf(label) => Opcode::NIf(*labels.get(label).unwrap()),
+            OpcodeL::Call(i) => Opcode::Call(*i),
             // Expression
             OpcodeL::Add => Opcode::Add,
             OpcodeL::Sub => Opcode::Sub,

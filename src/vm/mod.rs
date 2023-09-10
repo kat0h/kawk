@@ -1,5 +1,7 @@
 mod value;
+pub mod ifunc;
 use crate::ast::Value;
+use crate::ifunc::call_internal_func_from_index;
 
 use std::io::{BufRead, Write};
 
@@ -12,6 +14,7 @@ pub enum Opcode {
     Jump(usize),
     If(usize),
     NIf(usize),
+    Call(usize),
     // Expression
     Add,
     Sub,
@@ -99,6 +102,13 @@ impl VM<'_> {
                         self.pc = *pc;
                         continue;
                     }
+                }
+                //
+                // Call
+                // 内蔵関数を呼び出します
+                //
+                Opcode::Call(i) => {
+                    call_internal_func_from_index(*i, self);
                 }
                 // 四則演算
                 // スタックのトップからR→Lの順に値を取り出し，計算する

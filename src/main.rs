@@ -1,6 +1,7 @@
 mod ast;
 mod compile;
 mod parser;
+mod ifunc;
 mod vm;
 
 fn main() {
@@ -80,6 +81,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Jump(_) => "jump",
             vm::Opcode::If(_) => "if",
             vm::Opcode::NIf(_) => "nif",
+            vm::Opcode::Call(_) => "call",
             // Expression
             vm::Opcode::Add => "add",
             vm::Opcode::Sub => "sub",
@@ -111,6 +113,8 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Jump(i) => i.to_string(),
             vm::Opcode::If(i) => i.to_string(),
             vm::Opcode::NIf(i) => i.to_string(),
+            // 内蔵関数と対応させたい
+            vm::Opcode::Call(i) => i.to_string(),
             vm::Opcode::Print(l) => l.to_string(),
             vm::Opcode::InitEnv(n) => n.to_string(),
             vm::Opcode::LoadVar(n) => n.to_string(),
