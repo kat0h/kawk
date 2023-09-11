@@ -77,30 +77,32 @@ fn main() {
     // Parse program
     // ここを綺麗にフラットに書き直したい
     // Goのエラー処理みたいに書くべきなのか，そうではないのか
-    let ast = parser::parse(program);
-    if let Err(err) = &ast {
-        let line = err.location.line;
-        let col = err.location.column;
-        eprintln!("Syntax Error!");
-        // Syntaxエラーの時はもっと詳細にエラーを出したいよね
-        eprintln!("{}", program.split('\n').collect::<Vec<&str>>()[line - 1]);
-        eprintln!("{}^", " ".to_string().repeat(col - 1));
-        dbg!(&ast);
-        return;
-    }
-    let ast = ast.unwrap();
+    let ast = match parser::parse(program) {
+        Ok(ast) => ast,
+        Err(err) => {
+            let line = err.location.line;
+            let col = err.location.column;
+            eprintln!("Syntax Error!");
+            // Syntaxエラーの時はもっと詳細にエラーを出したいよね
+            eprintln!("{}", program.split('\n').collect::<Vec<&str>>()[line - 1]);
+            eprintln!("{}^", " ".to_string().repeat(col - 1));
+            dbg!(&err);
+            return;
+        }
+    };
     if option.debuglevel == DebugLevel::Ast {
         dbg!(ast);
         return;
     }
 
     // Compile program
-    let vmprg = compile::compile(&ast);
-    if let Err(error) = vmprg {
-        eprintln!("{}", error);
-        return;
-    }
-    let vmprg = vmprg.unwrap();
+    let vmprg = match compile::compile(&ast) {
+        Ok(vmprg) => vmprg,
+        Err(err) => {
+            eprintln!("{}", err);
+            return;
+        }
+    };
     if option.debuglevel == DebugLevel::ByteCode {
         show_vmprog(&vmprg);
         return;
