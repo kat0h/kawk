@@ -1,36 +1,76 @@
+use getopts::Options;
+
 mod ast;
 mod compile;
-mod parser;
 mod ifunc;
+mod parser;
 mod vm;
+
+/*
+ * AWK オプション
+ *   -h            : ヘルプを表示して終了
+ *   -f progfile   : progfileを実行
+ *   -d 1|2|3      : デバッグレベル
+ *   'program'     : programを実行
+ */
+
+struct Opts {
+    debuglevel: DebugLevel,
+}
+
+#[derive(PartialEq, Eq)]
+enum DebugLevel {
+    None,
+    Ast,
+    ByteCode,
+    Env
+}
 
 fn main() {
     // 引数を取得
     let args: Vec<String> = std::env::args().collect();
+    let mut option = Opts {
+        debuglevel: DebugLevel::None
+    };
 
     // コマンド単体で呼ばれた際はヘルプメッセージを表示
     if args.len() == 1 {
-        let binary_name = &args[0];
-        // usage: awk 'prog'
-        println!("usage: {} 'prog'", binary_name);
+        print_usage(&args[0]);
         return;
     }
 
-    // Debug Level
-    // 1 -> AST
-    // 2 -> Byte Code
-    // 3 -> print stack and env
-    let debuglevel = if args.len() == 3 {
-        if &args[2] == "1" {
-            1
-        } else if &args[2] == "2" {
-            2
-        } else {
-            3
+    let mut opts = Options::new();
+    opts.optflag("h", "help", "Print this help menu");
+    opts.optopt("d", "debug", "Set debug level", "DEBUGLEVEL");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            print_usage(&args[0]);
+            return;
         }
-    } else {
-        0
     };
+
+    if matches.opt_present("h") {
+        // TODO: ヘルプを実装
+        println!("HELP");
+        return;
+    };
+
+    if let Some(debuglevel) = matches.opt_str("d") {
+        println!("DEBUGLEVEL: {}", debuglevel);
+        option.debuglevel = if debuglevel == "1" {
+            DebugLevel::Ast
+        } else if debuglevel == "2" {
+            DebugLevel::ByteCode
+        } else if debuglevel == "3" {
+            DebugLevel::Env
+        } else {
+            eprintln!("Invalid debuglevel: {}", debuglevel);
+            return;
+        }
+    }
 
     let program = &args[1];
 
@@ -49,7 +89,7 @@ fn main() {
         return;
     }
     let ast = ast.unwrap();
-    if debuglevel == 1 {
+    if option.debuglevel == DebugLevel::Ast {
         dbg!(ast);
         return;
     }
@@ -61,7 +101,7 @@ fn main() {
         return;
     }
     let vmprg = vmprg.unwrap();
-    if debuglevel == 2 {
+    if option.debuglevel == DebugLevel::ByteCode {
         show_vmprog(&vmprg);
         return;
     }
@@ -72,9 +112,13 @@ fn main() {
     let mut vm = vm::VM::new(&vmprg);
     vm.run(&mut r, &mut w);
 
-    if debuglevel == 3 {
+    if option.debuglevel == DebugLevel::Env {
         vm.show_stack_and_env();
     }
+}
+
+fn print_usage(binary_name: &str) {
+    println!("usage: {} 'prog'", binary_name);
 }
 
 fn show_vmprog(vmprog: &compile::VMProgram) {
