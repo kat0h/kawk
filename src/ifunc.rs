@@ -24,6 +24,10 @@ pub fn call_internal_func_from_index(index: usize, vm: &mut VM) {
     (INTERNAL_FUNC[index].func)(vm);
 }
 
+pub fn get_len_of_args(index: usize) -> usize {
+    INTERNAL_FUNC[index].arglen
+}
+
 #[test]
 fn test_index_from_name() {
     assert_eq!(0, get_index_from_name("sin").unwrap());

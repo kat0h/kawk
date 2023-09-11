@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::ast;
 use crate::ast::Value;
 use crate::vm::Opcode;
-use crate::ifunc::get_index_from_name;
+use crate::ifunc;
 
 pub type VMProgram = Vec<Opcode>;
 type Asm = Vec<OpcodeL>;
@@ -61,7 +61,7 @@ enum OpcodeL {
  *   123 -> Expression
  */
 
-pub fn compile(ast: &ast::Program) -> VMProgram {
+pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     // そのうちはコンパイルエラーをResultで返すようにしたい
     // (エラーは呼び出し側で処理すべきなので)
     let mut asm: Asm = vec![];
@@ -72,22 +72,22 @@ pub fn compile(ast: &ast::Program) -> VMProgram {
     };
 
     // BEGINパターンを探しコンパイル
-    compile_all_begin_pattern(ast, &mut asm, &mut env);
+    compile_all_begin_pattern(ast, &mut asm, &mut env)?;
 
     // Always，Expressionパターンを探してコンパイル
-    compile_normal_pattern(ast, &mut asm, &mut env);
+    compile_normal_pattern(ast, &mut asm, &mut env)?;
 
     // ENDパターンを探してコンパイル
-    compile_all_end_pattern(ast, &mut asm, &mut env);
+    compile_all_end_pattern(ast, &mut asm, &mut env)?;
 
     // 最後にENDを追加 (そうしないとVMが終了しない)
     asm.push(OpcodeL::End);
 
-    asm_to_vmprogram(&asm, &mut env)
+    Ok(asm_to_vmprogram(&asm, &mut env))
 }
 
 // 全てのBEGINパターンを探してコンパイルする
-fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) {
+fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
     // fin BEGIN pattern
     let items = ast
         .iter()
@@ -96,12 +96,14 @@ fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut Compil
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm, env);
+        compile_action(&item.action, asm, env)?;
     }
+
+    Ok(())
 }
 
 // 全ての通常パターンをコンパイルする
-fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) {
+fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
     // BEGIN/END以外のパターンが存在するか確認
     let items = ast
         .iter()
@@ -110,7 +112,7 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEn
         .collect::<Vec<_>>();
 
     if items.is_empty() {
-        return;
+        return Ok(());
     }
 
     asm.push(OpcodeL::Label("loop".to_string()));
@@ -124,23 +126,25 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEn
         // 式パターン
         if let ast::Pattern::Expression(e) = &item.pattern {
             let label = format!("exp{}", expression_index);
-            compile_expression(e, asm, env);
+            compile_expression(e, asm, env)?;
             asm.push(OpcodeL::NIf(label.to_string()));
-            compile_action(&item.action, asm, env);
+            compile_action(&item.action, asm, env)?;
             asm.push(OpcodeL::Label(label));
             expression_index += 1;
 
         // Alwaysパターン
         } else {
-            compile_action(&item.action, asm, env);
+            compile_action(&item.action, asm, env)?;
         }
     }
 
     asm.push(OpcodeL::Jump("loop".to_string()));
     asm.push(OpcodeL::Label("theend".to_string()));
+
+    Ok(())
 }
 
-fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) {
+fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
     // fin BEGIN pattern
     let items = ast
         .iter()
@@ -149,12 +153,14 @@ fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileE
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm, env);
+        compile_action(&item.action, asm, env)? ;
     }
+
+    Ok(())
 }
 
 // action ::: {}で囲われた一連のコード
-fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) {
+fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
     for statement in action.iter() {
         match statement {
 
@@ -162,7 +168,7 @@ fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) {
             ast::Statement::Print(expressions) => {
                 // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
                 for e in expressions.iter().rev() {
-                    compile_expression(e, asm, env);
+                    compile_expression(e, asm, env)?;
                 }
                 asm.push(OpcodeL::Print(expressions.len()));
             }
@@ -170,7 +176,7 @@ fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) {
             // 式
             ast::Statement::Expression(expression) => {
                 // 式単体の場合，最後にpopする
-                compile_expression(expression, asm, env);
+                compile_expression(expression, asm, env)?;
                 asm.push(OpcodeL::Pop);
             }
 
@@ -181,17 +187,19 @@ fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) {
                 env.while_label_count += 1;
 
                 asm.push(OpcodeL::Label(format!("while_s_{label}")));
-                compile_expression(exp, asm, env);
+                compile_expression(exp, asm, env)?;
                 asm.push(OpcodeL::NIf(format!("while_e_{label}")));
-                compile_action(stat, asm, env);
+                compile_action(stat, asm, env)?;
                 asm.push(OpcodeL::Jump(format!("while_s_{label}")));
                 asm.push(OpcodeL::Label(format!("while_e_{label}")));
             }
         }
     }
+
+    Ok(())
 }
 
-fn compile_expression(expression: &ast::Expression, asm: &mut Asm, _env: &mut CompileEnv) {
+fn compile_expression(expression: &ast::Expression, asm: &mut Asm, _env: &mut CompileEnv) -> Result<(), &'static str> {
     // 式をコンパイル
     // compile_expressionはeval関数のように再帰しながら式をコンパイルする
     match expression {
@@ -199,32 +207,38 @@ fn compile_expression(expression: &ast::Expression, asm: &mut Asm, _env: &mut Co
             asm.push(OpcodeL::Push(v.clone()));
         }
         ast::Expression::BinaryOp { op, left, right } => {
-            compile_expression(left, asm, _env);
-            compile_expression(right, asm, _env);
+            compile_expression(left, asm, _env)?;
+            compile_expression(right, asm, _env)?;
             compile_operator(op, asm);
         }
         ast::Expression::GetField(e) => {
-            compile_expression(e, asm, _env);
+            compile_expression(e, asm, _env)?;
             asm.push(OpcodeL::GetField);
         }
         ast::Expression::LValue(lvalue) => match lvalue {
             ast::LValue::Name(name) => asm.push(OpcodeL::LoadVar(name.to_string())),
         },
         ast::Expression::Assign { lval, expr } => {
-            compile_expression(expr, asm, _env);
+            compile_expression(expr, asm, _env)?;
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
             }
         }
         ast::Expression::CallIFunc { name, args } => {
             for e in args.iter().rev() {
-                compile_expression(e, asm, _env);
+                compile_expression(e, asm, _env)?;
+            }
+            let index = ifunc::get_index_from_name(name).unwrap();
+            if args.len() != ifunc::get_len_of_args(index) {
+                return Err("Invalid arg len");
             }
             // TODO
             // ここで引数の個数はチェックしたい
-            asm.push(OpcodeL::Call(get_index_from_name(name).unwrap()));
+            asm.push(OpcodeL::Call(index));
         }
     }
+
+    Ok(())
 }
 
 fn compile_operator(op: &ast::Operator, asm: &mut Asm) {
@@ -349,7 +363,7 @@ fn test_compile() {
         Opcode::Print(2),
         Opcode::End,
     ];
-    let actual = compile(&ast);
+    let actual = compile(&ast).unwrap();
 
     assert_eq!(&expect, &actual);
 }
@@ -371,7 +385,7 @@ fn test_compile2() {
         Opcode::Print(1),
         Opcode::End,
     ];
-    let actual = compile(&ast);
+    let actual = compile(&ast).unwrap();
 
     assert_eq!(&expect, &actual);
 }

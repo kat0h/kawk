@@ -56,6 +56,11 @@ fn main() {
 
     // Compile program
     let vmprg = compile::compile(&ast);
+    if let Err(error) = vmprg {
+        eprintln!("{}", error);
+        return;
+    }
+    let vmprg = vmprg.unwrap();
     if debuglevel == 2 {
         show_vmprog(&vmprg);
         return;
