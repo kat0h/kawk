@@ -1,1 +1,3 @@
-BEGIN { print(1) }
+BEGIN {
+  print 1
+}

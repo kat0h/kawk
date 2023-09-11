@@ -10,7 +10,9 @@ peg::parser! {
         // BEGIN { print(123) } のような一連のプログラム
         // 改行文字は含まないので予め消してから
         pub rule prog() -> ast::Program
-            = _ i:(item() ** (_ ";" _)) __ { i }
+            = __ i:(
+                item() ** (_ [';' | '\n']* _)
+            ) __ { i }
 
         // itemはpattern BEGIN とaction {} の複合
         rule item() -> ast::Item
@@ -27,7 +29,7 @@ peg::parser! {
 
         // action は {} で囲われていて，それぞれの文は ; で区切られている
         rule action() -> ast::Action
-            = "{" _ a:(statement() ** (_ ";" _)) _ "}" { a }
+            = "{" __ a:(statement() ** (_ [';' | '\n']* _)) __ "}" { a }
 
         // print文 POSIXでは括弧の前に空白を置くことが許可される
         rule statement() -> ast::Statement
