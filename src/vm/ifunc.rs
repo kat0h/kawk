@@ -12,3 +12,9 @@ pub fn ifunc_cos(vm: &mut VM) {
     let ret = Value::Num(arg.to_float().cos());
     vm.stack.push(ret);
 }
+
+pub fn ifunc_exp(vm: &mut VM) {
+    let arg = vm.stack.pop().unwrap();
+    let ret = Value::Num(arg.to_float().exp());
+    vm.stack.push(ret);
+}

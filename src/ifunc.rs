@@ -4,7 +4,6 @@ use crate::vm::ifunc;
 
 
 type Func = fn(vm: &mut VM);
-#[allow(dead_code)]
 struct IFunc {
     name: &'static str,
     func: Func,
@@ -14,6 +13,7 @@ struct IFunc {
 const INTERNAL_FUNC: &[IFunc] = &[
     IFunc { name: "sin", func: ifunc::ifunc_sin, arglen: 1 },
     IFunc { name: "cos", func: ifunc::ifunc_cos, arglen: 1 },
+    IFunc { name: "exp", func: ifunc::ifunc_exp, arglen: 1 },
 ];
 
 pub fn get_index_from_name(name: &str) -> Option<usize> {
