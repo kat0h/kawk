@@ -1,4 +1,6 @@
 use getopts::Options;
+use std::fs::File;
+use std::io::prelude::*;
 
 mod ast;
 mod compile;
@@ -33,15 +35,10 @@ fn main() {
         debuglevel: DebugLevel::None
     };
 
-    // コマンド単体で呼ばれた際はヘルプメッセージを表示
-    if args.len() == 1 {
-        print_usage(&args[0]);
-        return;
-    }
-
     let mut opts = Options::new();
     opts.optflag("h", "help", "Print this help menu");
-    opts.optopt("d", "debug", "Set debug level", "DEBUGLEVEL");
+    opts.optopt("d", "", "Set debug level", "DEBUGLEVEL");
+    opts.optopt("f", "", "filename to run", "progfile");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -72,12 +69,39 @@ fn main() {
         }
     }
 
-    let program = &args[1];
+    let program = if let Some(filename) = matches.opt_str("f") {
+        let mut f = match File::open(&filename) {
+            Ok(f) => f,
+            Err(_) => {
+                eprintln!("{}: fatal: cannot open source file `{}' for reading: No such file or directory", &args[0], filename);
+                return;
+            }
+        };
+
+        let mut contents = String::new();
+        match f.read_to_string(&mut contents) {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!("{}: fatal: cannot read source file `{}': {}", args[0], filename, err);
+                return;
+            }
+        };
+        contents
+    } else {
+        match matches.free.first() {
+            Some(program) => program.clone(),
+            None => {
+                // 実行するプログラムがなければメッセージを表示
+                print_usage(&args[0]);
+                return;
+            }
+        }
+    };
 
     // Parse program
     // ここを綺麗にフラットに書き直したい
     // Goのエラー処理みたいに書くべきなのか，そうではないのか
-    let ast = match parser::parse(program) {
+    let ast = match parser::parse(&program) {
         Ok(ast) => ast,
         Err(err) => {
             let line = err.location.line;

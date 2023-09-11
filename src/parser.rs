@@ -10,7 +10,7 @@ peg::parser! {
         // BEGIN { print(123) } のような一連のプログラム
         // 改行文字は含まないので予め消してから
         pub rule prog() -> ast::Program
-            = _ i:(item() ** (_ ";" _)) _ { i }
+            = _ i:(item() ** (_ ";" _)) __ { i }
 
         // itemはpattern BEGIN とaction {} の複合
         rule item() -> ast::Item
@@ -175,6 +175,7 @@ peg::parser! {
 
         // 空白文字を処理
         rule _() = [' ' | '\t']*
+        rule __() = [' ' | '\t' | '\n']*
     }
 }
 
