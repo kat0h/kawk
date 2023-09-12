@@ -2,15 +2,15 @@ use std::collections::HashMap;
 
 use crate::ast;
 use crate::ast::Value;
-use crate::vm::Opcode;
 use crate::ifunc;
+use crate::vm::Opcode;
 
 pub type VMProgram = Vec<Opcode>;
 type Asm = Vec<OpcodeL>;
 
 struct CompileEnv {
     // while文が使ったラベルのカウント
-    while_label_count: usize
+    while_label_count: usize,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -68,7 +68,7 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
 
     // コンパイル時環境
     let mut env = CompileEnv {
-        while_label_count: 0
+        while_label_count: 0,
     };
 
     // BEGINパターンを探しコンパイル
@@ -87,11 +87,23 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
 }
 
 // 全てのBEGINパターンを探してコンパイルする
-fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
+fn compile_all_begin_pattern(
+    ast: &ast::Program,
+    asm: &mut Asm,
+    env: &mut CompileEnv,
+) -> Result<(), &'static str> {
     // fin BEGIN pattern
     let items = ast
         .iter()
-        .filter(|i| matches!(i.pattern, ast::Pattern::Begin))
+        .filter_map(|i| match i {
+            ast::Item::PatternAction(i) => {
+                if matches!(i.pattern, ast::Pattern::Begin) {
+                    return Some(i);
+                }
+                None
+            }
+            ast::Item::Function(_) => None,
+        })
         .collect::<Vec<_>>();
 
     for item in items.into_iter() {
@@ -103,12 +115,25 @@ fn compile_all_begin_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut Compil
 }
 
 // 全ての通常パターンをコンパイルする
-fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
+fn compile_normal_pattern(
+    ast: &ast::Program,
+    asm: &mut Asm,
+    env: &mut CompileEnv,
+) -> Result<(), &'static str> {
     // BEGIN/END以外のパターンが存在するか確認
     let items = ast
         .iter()
-        .filter(|i| !matches!(i.pattern, ast::Pattern::Begin))
-        .filter(|i| !matches!(i.pattern, ast::Pattern::End))
+        .filter_map(|i| match i {
+            ast::Item::PatternAction(i) => {
+                if !matches!(i.pattern, ast::Pattern::Begin)
+                    && !matches!(i.pattern, ast::Pattern::Begin)
+                {
+                    return Some(i);
+                }
+                None
+            }
+            ast::Item::Function(_) => None,
+        })
         .collect::<Vec<_>>();
 
     if items.is_empty() {
@@ -144,26 +169,41 @@ fn compile_normal_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEn
     Ok(())
 }
 
-fn compile_all_end_pattern(ast: &ast::Program, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
+fn compile_all_end_pattern(
+    ast: &ast::Program,
+    asm: &mut Asm,
+    env: &mut CompileEnv,
+) -> Result<(), &'static str> {
     // fin BEGIN pattern
     let items = ast
         .iter()
-        .filter(|i| matches!(i.pattern, ast::Pattern::End))
+        .filter_map(|i| match i {
+            ast::Item::PatternAction(i) => {
+                if matches!(i.pattern, ast::Pattern::End) {
+                    return Some(i);
+                }
+                None
+            }
+            ast::Item::Function(_) => None,
+        })
         .collect::<Vec<_>>();
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm, env)? ;
+        compile_action(&item.action, asm, env)?;
     }
 
     Ok(())
 }
 
 // action ::: {}で囲われた一連のコード
-fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) -> Result<(), &'static str> {
+fn compile_action(
+    action: &ast::Action,
+    asm: &mut Asm,
+    env: &mut CompileEnv,
+) -> Result<(), &'static str> {
     for statement in action.iter() {
         match statement {
-
             // print文
             ast::Statement::Print(expressions) => {
                 // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
@@ -199,7 +239,11 @@ fn compile_action(action: &ast::Action, asm: &mut Asm, env: &mut CompileEnv) -> 
     Ok(())
 }
 
-fn compile_expression(expression: &ast::Expression, asm: &mut Asm, _env: &mut CompileEnv) -> Result<(), &'static str> {
+fn compile_expression(
+    expression: &ast::Expression,
+    asm: &mut Asm,
+    _env: &mut CompileEnv,
+) -> Result<(), &'static str> {
     // 式をコンパイル
     // compile_expressionはeval関数のように再帰しながら式をコンパイルする
     match expression {
@@ -350,13 +394,13 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
 
 #[test]
 fn test_compile() {
-    let ast = vec![ast::Item {
+    let ast = vec![ast::Item::PatternAction(ast::PatternAction {
         pattern: ast::Pattern::Begin,
         action: vec![ast::Statement::Print(vec![
             ast::Expression::Value(ast::Value::Num(1.0)),
             ast::Expression::Value(ast::Value::Num(2.0)),
         ])],
-    }];
+    })];
     let expect = vec![
         Opcode::Push(ast::Value::Num(2.0)),
         Opcode::Push(ast::Value::Num(1.0)),
@@ -370,14 +414,14 @@ fn test_compile() {
 
 #[test]
 fn test_compile2() {
-    let ast = vec![ast::Item {
+    let ast = vec![ast::Item::PatternAction(ast::PatternAction {
         pattern: ast::Pattern::Begin,
         action: vec![ast::Statement::Print(vec![ast::Expression::BinaryOp {
             op: ast::Operator::Div,
             left: Box::new(ast::Expression::Value(ast::Value::Num(6.0))),
             right: Box::new(ast::Expression::Value(ast::Value::Num(2.0))),
         }])],
-    }];
+    })];
     let expect = vec![
         Opcode::Push(ast::Value::Num(6.0)),
         Opcode::Push(ast::Value::Num(2.0)),

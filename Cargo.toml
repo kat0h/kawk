@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 peg = "0.8.1"
 getopts = "0.2"
+indoc = "2"
 
 [profile.release]
 opt-level = 3

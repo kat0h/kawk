@@ -1,6 +1,7 @@
 use getopts::Options;
 use std::fs::File;
 use std::io::prelude::*;
+use indoc::indoc;
 
 mod ast;
 mod compile;
@@ -17,6 +18,7 @@ mod vm;
  */
 
 struct Opts {
+    program_name: String,
     debuglevel: DebugLevel,
 }
 
@@ -32,6 +34,7 @@ fn main() {
     // 引数を取得
     let args: Vec<String> = std::env::args().collect();
     let mut option = Opts {
+        program_name: args[0].clone(),
         debuglevel: DebugLevel::None
     };
 
@@ -44,14 +47,14 @@ fn main() {
         Ok(m) => m,
         Err(e) => {
             eprintln!("Error: {}", e);
-            print_usage(&args[0]);
+            print_usage(&option.program_name);
             return;
         }
     };
 
     if matches.opt_present("h") {
         // TODO: ヘルプを実装
-        println!("HELP");
+        print_help(&option.program_name);
         return;
     };
 
@@ -82,7 +85,7 @@ fn main() {
         match f.read_to_string(&mut contents) {
             Ok(_) => (),
             Err(err) => {
-                eprintln!("{}: fatal: cannot read source file `{}': {}", args[0], filename, err);
+                eprintln!("{}: fatal: cannot read source file `{}': {}", option.program_name, filename, err);
                 return;
             }
         };
@@ -98,9 +101,7 @@ fn main() {
         }
     };
 
-    // Parse program
-    // ここを綺麗にフラットに書き直したい
-    // Goのエラー処理みたいに書くべきなのか，そうではないのか
+    // Parse
     let ast = match parser::parse(&program) {
         Ok(ast) => ast,
         Err(err) => {
@@ -119,11 +120,11 @@ fn main() {
         return;
     }
 
-    // Compile program
+    // Compile
     let vmprg = match compile::compile(&ast) {
         Ok(vmprg) => vmprg,
         Err(err) => {
-            eprintln!("{}", err);
+            eprintln!("Compile Error: {}", err);
             return;
         }
     };
@@ -132,7 +133,7 @@ fn main() {
         return;
     }
 
-    // Run Program
+    // Run
     let mut r = std::io::stdin().lock();
     let mut w = std::io::stdout().lock();
     let mut vm = vm::VM::new(&vmprg);
@@ -145,6 +146,20 @@ fn main() {
 
 fn print_usage(binary_name: &str) {
     println!("usage: {} 'prog'", binary_name);
+}
+
+fn print_help(binary_name: &str) {
+    println!(
+        indoc!{"
+            Usage: {} [options] 
+            options:
+                    -f progfile
+                        file to run
+                    -d 1|2|3
+                        specify debug level
+        "},
+        binary_name
+    )
 }
 
 fn show_vmprog(vmprog: &compile::VMProgram) {

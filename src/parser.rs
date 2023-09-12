@@ -16,7 +16,7 @@ peg::parser! {
 
         // itemはpattern BEGIN とaction {} の複合
         rule item() -> ast::Item
-            = pattern:pattern() _ action:action() { ast::Item { pattern, action } }
+            = pattern:pattern() _ action:action() { ast::Item::PatternAction(ast::PatternAction { pattern, action }) }
 
         // BEGIN / END / 条件式など
         rule pattern() -> ast::Pattern
@@ -193,7 +193,7 @@ pub fn is_awk_reserved_name(name: &str) -> bool {
 #[test]
 fn test_parser() {
     let prg = " BEGIN { print( 123 + 333 , 456 ) } ";
-    let expect = vec![ast::Item {
+    let expect = vec![ast::Item::PatternAction(ast::PatternAction {
         pattern: ast::Pattern::Begin,
         action: vec![ast::Statement::Print(vec![
             ast::Expression::BinaryOp {
@@ -203,7 +203,7 @@ fn test_parser() {
             },
             ast::Expression::Value(ast::Value::Num(456.0)),
         ])],
-    }];
+    })];
     let actual = awk::prog(prg).unwrap();
 
     assert_eq!(expect, actual);

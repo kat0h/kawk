@@ -1,7 +1,13 @@
 pub type Program = Vec<Item>;
 
 #[derive(Debug, PartialEq)]
-pub struct Item {
+pub enum Item {
+    PatternAction(PatternAction),
+    Function(Function)
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PatternAction {
     pub pattern: Pattern,
     pub action: Action,
 }
@@ -15,6 +21,13 @@ pub enum Pattern {
 }
 
 pub type Action = Vec<Statement>;
+
+#[derive(Debug, PartialEq)]
+pub struct Function {
+    // 引数リスト
+    pub args: Vec<String>,
+    pub action: Action
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
