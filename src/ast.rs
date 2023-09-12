@@ -24,6 +24,7 @@ pub type Action = Vec<Statement>;
 
 #[derive(Debug, PartialEq)]
 pub struct Function {
+    pub name: String,
     // 引数リスト
     pub args: Vec<String>,
     pub action: Action
@@ -44,6 +45,10 @@ pub enum Expression {
         expr: Box<Expression>,
     },
     CallIFunc {
+        name: String,
+        args: Vec<Expression>
+    },
+    CallUserFunc {
         name: String,
         args: Vec<Expression>
     }
@@ -80,7 +85,8 @@ pub enum Statement {
     While {
         exp: Expression,
         stat: Action
-    }
+    },
+    Return(Expression)
 }
 
 #[derive(Debug, PartialEq, Clone)]

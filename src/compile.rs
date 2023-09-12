@@ -233,6 +233,7 @@ fn compile_action(
                 asm.push(OpcodeL::Jump(format!("while_s_{label}")));
                 asm.push(OpcodeL::Label(format!("while_e_{label}")));
             }
+            ast::Statement::Return(_e) => todo!()
         }
     }
 
@@ -280,6 +281,7 @@ fn compile_expression(
             // ここで引数の個数はチェックしたい
             asm.push(OpcodeL::Call(index));
         }
+        ast::Expression::CallUserFunc { name: _, args: _ } => todo!()
     }
 
     Ok(())

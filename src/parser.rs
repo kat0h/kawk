@@ -11,12 +11,17 @@ peg::parser! {
         // 改行文字は含まないので予め消してから
         pub rule prog() -> ast::Program
             = __ i:(
-                item() ** (_ [';' | '\n']* _)
+                (patternaction() / function()) ** (_ [';' | '\n']* _)
             ) __ { i }
 
-        // itemはpattern BEGIN とaction {} の複合
-        rule item() -> ast::Item
+        // patternactionはpattern BEGIN とaction {} の複合
+        rule patternaction() -> ast::Item
             = pattern:pattern() _ action:action() { ast::Item::PatternAction(ast::PatternAction { pattern, action }) }
+
+        rule function() -> ast::Item
+            = "function" _ name:name() "(" _ args:(name() ** (_ "," _))  _ ")" __ action:action() {
+               ast::Item::Function(ast::Function { name, args, action })
+            }
 
         // BEGIN / END / 条件式など
         rule pattern() -> ast::Pattern
@@ -50,6 +55,10 @@ peg::parser! {
                         exp: e,
                         stat: s
                     }
+                }
+                // return文
+                "return" _ e:expression() {
+                    ast::Statement::Return(e)
                 }
             }
 
@@ -138,20 +147,17 @@ peg::parser! {
                 --
                 n:number() { ast::Expression::Value(ast::Value::Num(n)) }
                 n:string() { ast::Expression::Value(ast::Value::Str(n)) }
-                e:internal_func_call() { e }
+                e:func_call() { e }
                 n:lvalue() { ast::Expression::LValue(n) }
                 "(" _ e:expression() _ ")" { e }
             }
 
-        rule internal_func_call() -> ast::Expression
-            = n:name() "(" a:(expression() ** (_ "," _)) ")" {?
-                if get_index_from_name(&n).is_some() {
-                    Ok(ast::Expression::CallIFunc {
-                        name: n,
-                        args: a
-                    })
+        rule func_call() -> ast::Expression
+            = name:name() "(" args:(expression() ** (_ "," _)) ")" {
+                if get_index_from_name(&name).is_some() {
+                    ast::Expression::CallIFunc { name, args }
                 } else {
-                    Err("Not a internal command")
+                    ast::Expression::CallUserFunc { name, args }
                 }
             }
 
