@@ -22,6 +22,8 @@ enum OpcodeL {
     If(String),
     NIf(String),
     Call(usize),
+    CallUserFunc(String),
+    Return,
     // Expression
     Add,
     Sub,
@@ -83,7 +85,38 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     // 最後にENDを追加 (そうしないとVMが終了しない)
     asm.push(OpcodeL::End);
 
+    compile_user_definition_function(ast, &mut asm, &mut env)?;
+
     Ok(asm_to_vmprogram(&asm, &mut env))
+}
+
+fn compile_user_definition_function(
+    ast: &ast::Program,
+    asm: &mut Asm,
+    env: &mut CompileEnv,
+) -> Result<(), &'static str> {
+    // ユーザー定義関数を探す
+    let functions = ast
+        .iter()
+        .filter_map(|i| {
+            if let ast::Item::Function(func) = i {
+                Some(func)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    for func in functions.into_iter() {
+        asm.push(OpcodeL::Label(format!("userfn_{}", &func.name)));
+        // 関数内のactionであることを伝える方法を用意する
+        compile_action(&func.action, asm, env)?;
+        // 戻り値をpush
+        asm.push(OpcodeL::Push(Value::None));
+        asm.push(OpcodeL::Return);
+    }
+
+    Ok(())
 }
 
 // 全てのBEGINパターンを探してコンパイルする
@@ -92,7 +125,7 @@ fn compile_all_begin_pattern(
     asm: &mut Asm,
     env: &mut CompileEnv,
 ) -> Result<(), &'static str> {
-    // fin BEGIN pattern
+    // find BEGIN pattern
     let items = ast
         .iter()
         .filter_map(|i| match i {
@@ -233,7 +266,7 @@ fn compile_action(
                 asm.push(OpcodeL::Jump(format!("while_s_{label}")));
                 asm.push(OpcodeL::Label(format!("while_e_{label}")));
             }
-            ast::Statement::Return(_e) => todo!()
+            ast::Statement::Return(_e) => todo!(),
         }
     }
 
@@ -261,6 +294,7 @@ fn compile_expression(
             asm.push(OpcodeL::GetField);
         }
         ast::Expression::LValue(lvalue) => match lvalue {
+            // 関数の引数はどうやって処理する？
             ast::LValue::Name(name) => asm.push(OpcodeL::LoadVar(name.to_string())),
         },
         ast::Expression::Assign { lval, expr } => {
@@ -281,7 +315,9 @@ fn compile_expression(
             // ここで引数の個数はチェックしたい
             asm.push(OpcodeL::Call(index));
         }
-        ast::Expression::CallUserFunc { name: _, args: _ } => todo!()
+        ast::Expression::CallUserFunc { name, args: _ } => {
+            asm.push(OpcodeL::CallUserFunc(format!("userfn_{}", name)));
+        }
     }
 
     Ok(())
@@ -363,6 +399,8 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             OpcodeL::If(label) => Opcode::If(*labels.get(label).unwrap()),
             OpcodeL::NIf(label) => Opcode::NIf(*labels.get(label).unwrap()),
             OpcodeL::Call(i) => Opcode::Call(*i),
+            OpcodeL::CallUserFunc(label) => Opcode::CallUserFunc(*labels.get(label).unwrap()),
+            OpcodeL::Return => Opcode::Return,
             // Expression
             OpcodeL::Add => Opcode::Add,
             OpcodeL::Sub => Opcode::Sub,

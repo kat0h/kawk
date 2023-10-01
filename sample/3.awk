@@ -10,3 +10,4 @@ BEGIN {
 
   print "合計: " sum
 }
+

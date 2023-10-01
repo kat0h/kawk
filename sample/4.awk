@@ -1,7 +1,13 @@
-function add(a, b) {
-  return a + b
+function test() {
+  print "test"
+  test2()
+}
+
+function test2() {
+  print "test2"
 }
 
 BEGIN {
-  print add(1, 2)
+  test()
+  print "end"
 }

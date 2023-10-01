@@ -19,8 +19,12 @@ peg::parser! {
             = pattern:pattern() _ action:action() { ast::Item::PatternAction(ast::PatternAction { pattern, action }) }
 
         rule function() -> ast::Item
-            = "function" _ name:name() "(" _ args:(name() ** (_ "," _))  _ ")" __ action:action() {
-               ast::Item::Function(ast::Function { name, args, action })
+            // NOTE:: 内蔵関数の書き換えはどうする？
+            // = "function" _ name:name() "(" _ args:(name() ** (_ "," _))  _ ")" __ action:action() {
+            //    ast::Item::Function(ast::Function { name, args, action })
+            // }
+            = "function" _ name:name() "(" ")" __ action:action() {
+               ast::Item::Function(ast::Function { name, args: vec![], action })
             }
 
         // BEGIN / END / 条件式など
@@ -155,9 +159,11 @@ peg::parser! {
         rule func_call() -> ast::Expression
             = name:name() "(" args:(expression() ** (_ "," _)) ")" {
                 if get_index_from_name(&name).is_some() {
+                    // 内蔵関数とユーザー関数は区別される
                     ast::Expression::CallIFunc { name, args }
                 } else {
-                    ast::Expression::CallUserFunc { name, args }
+                    // ast::Expression::CallUserFunc { name, args }
+                    ast::Expression::CallUserFunc { name, args: vec![] }
                 }
             }
 

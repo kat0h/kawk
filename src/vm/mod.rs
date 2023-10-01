@@ -15,6 +15,8 @@ pub enum Opcode {
     If(usize),
     NIf(usize),
     Call(usize),
+    CallUserFunc(usize),
+    Return,
     // Expression
     Add,
     Sub,
@@ -49,6 +51,7 @@ pub struct VM<'a> {
     fields: Vec<String>,
     nf: Value,
     env: Vec<Value>,
+    retpc: Vec<usize>,
 }
 
 // TODO
@@ -64,6 +67,7 @@ impl VM<'_> {
             fields: vec![],
             nf: Value::Num(0.0),
             env: vec![],
+            retpc: vec![],
         }
     }
 
@@ -105,11 +109,31 @@ impl VM<'_> {
                 }
                 //
                 // Call
-                // 内蔵関数を呼び出します
+                // 内蔵関数を呼び出します．内蔵関数のindexを指定します．
                 //
                 Opcode::Call(i) => {
                     call_internal_func_from_index(*i, self);
                 }
+
+                //
+                // CallUserFunc
+                // ユーザー定義関数を呼び出します
+                // 呼び出すとき現在のプログラムカウンタを環境にpushし，returnで元の位置に戻れるようにします
+                Opcode::CallUserFunc(i) => {
+                    // プログラムカウンタを保存
+                    self.retpc.push(self.pc);
+                    self.pc = *i;
+                    // pcに1を足されると困るのでcontinue(jumpと同じ挙動)
+                    continue;
+                }
+
+                // 関数呼び出しから復帰します
+                // 戻り先pcスタックから一つ取り出し，プログラムカウンタをセットします
+                Opcode::Return => {
+                    let pc = self.retpc.pop().unwrap();
+                    self.pc = pc;
+                }
+
                 // 四則演算
                 // スタックのトップからR→Lの順に値を取り出し，計算する
                 // トップに置かれた数字が右側なのはコンパイルしやすくするため
