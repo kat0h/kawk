@@ -264,7 +264,12 @@ fn compile_action(
                 asm.push(OpcodeL::Jump(format!("while_s_{label}")));
                 asm.push(OpcodeL::Label(format!("while_e_{label}")));
             }
-            ast::Statement::Return(_e) => todo!(),
+            // Return文
+            // TODO: 関数の外でのreturn文をエラーにする
+            ast::Statement::Return(e) => {
+                compile_expression(e, asm, env)?;
+                asm.push(OpcodeL::Return);
+            },
         }
     }
 
@@ -300,6 +305,7 @@ fn compile_expression(
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
             }
+            asm.push(OpcodeL::Push(Value::None));
         }
         ast::Expression::CallIFunc { name, args } => {
             for e in args.iter().rev() {

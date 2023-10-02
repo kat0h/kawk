@@ -64,6 +64,9 @@ peg::parser! {
                 "return" _ e:expression() {
                     ast::Statement::Return(e)
                 }
+                "return" {
+                    ast::Statement::Return(ast::Expression::Value(ast::Value::None))
+                }
             }
 
         // 式

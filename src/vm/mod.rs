@@ -131,7 +131,6 @@ impl VM<'_> {
                 // 関数呼び出しから復帰します
                 // 戻り先pcスタックから一つ取り出し，プログラムカウンタをセットします
                 Opcode::Return => {
-                    self.stack.push(Value::None);
                     let pc = self.retpc.pop().unwrap();
                     self.pc = pc;
                 }
@@ -251,10 +250,6 @@ impl VM<'_> {
             }
             self.pc += 1;
         }
-
-        if !self.stack.is_empty() {
-            panic!("Internal Error: Stack is not empty after run");
-        }
     }
 
     pub fn show_stack_and_env(self) {
@@ -279,6 +274,7 @@ fn op_readline<R: BufRead>(vm: &mut VM, reader: &mut R) {
 
 fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
     let mut s = false;
+    dbg!(&vm.stack);
     for _ in 0..n {
         write!(
             writer,
