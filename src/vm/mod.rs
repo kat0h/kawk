@@ -274,14 +274,17 @@ fn op_readline<R: BufRead>(vm: &mut VM, reader: &mut R) {
 
 fn op_print<W: Write>(vm: &mut VM, writer: &mut W, n: usize) {
     let mut s = false;
-    dbg!(&vm.stack);
+    let mut i = vec![];
     for _ in 0..n {
+        i.push(vm.stack.pop().unwrap().to_str());
+    }
+    for o in i.iter().rev() {
         write!(
             writer,
             "{}{}",
             if s { " " } else { "" },
             // スタックが空の時はpanicする
-            vm.stack.pop().unwrap().to_str()
+            o
         )
         .unwrap();
         s = true;
@@ -306,12 +309,12 @@ fn test_vm() {
     use std::str;
 
     let prg = [
-        Opcode::Push(Value::Num(4.0)),
-        Opcode::Push(Value::Num(2.0)),
-        Opcode::Div,
         Opcode::Push(Value::Num(1.0)),
         Opcode::Push(Value::Num(2.0)),
         Opcode::Add,
+        Opcode::Push(Value::Num(4.0)),
+        Opcode::Push(Value::Num(2.0)),
+        Opcode::Div,
         Opcode::Print(2),
         Opcode::End,
     ];

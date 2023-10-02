@@ -238,7 +238,7 @@ fn compile_action(
             // print文
             ast::Statement::Print(expressions) => {
                 // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
-                for e in expressions.iter().rev() {
+                for e in expressions.iter() {
                     compile_expression(e, asm, env)?;
                 }
                 asm.push(OpcodeL::Print(expressions.len()));
@@ -446,8 +446,8 @@ fn test_compile() {
         ])],
     })];
     let expect = vec![
-        Opcode::Push(ast::Value::Num(2.0)),
         Opcode::Push(ast::Value::Num(1.0)),
+        Opcode::Push(ast::Value::Num(2.0)),
         Opcode::Print(2),
         Opcode::End,
     ];
