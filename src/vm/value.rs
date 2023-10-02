@@ -23,6 +23,13 @@ impl Value {
             Value::None => "".to_string(),
         }
     }
+    pub fn to_dbgstr(&self) -> String {
+        match self {
+            Value::Num(n) => n.to_string(),
+            Value::Str(s) => format!("\"{}\"", s),
+            Value::None => "None".to_string(),
+        }
+    }
     pub fn to_float(&self) -> f64 {
         match self {
             Value::Num(n) => *n,

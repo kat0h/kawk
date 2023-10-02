@@ -201,7 +201,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
         };
 
         let arg = match opcode {
-            vm::Opcode::Push(val) => val.to_str(),
+            vm::Opcode::Push(val) => val.to_dbgstr(),
             vm::Opcode::Jump(i) => i.to_string(),
             vm::Opcode::If(i) => i.to_string(),
             vm::Opcode::NIf(i) => i.to_string(),

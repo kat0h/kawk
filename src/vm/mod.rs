@@ -119,6 +119,7 @@ impl VM<'_> {
                 // CallUserFunc
                 // ユーザー定義関数を呼び出します
                 // 呼び出すとき現在のプログラムカウンタを環境にpushし，returnで元の位置に戻れるようにします
+                // 引数の個数をスタックにpushする
                 Opcode::CallUserFunc(i) => {
                     // プログラムカウンタを保存
                     self.retpc.push(self.pc);
@@ -130,6 +131,7 @@ impl VM<'_> {
                 // 関数呼び出しから復帰します
                 // 戻り先pcスタックから一つ取り出し，プログラムカウンタをセットします
                 Opcode::Return => {
+                    self.stack.push(Value::None);
                     let pc = self.retpc.pop().unwrap();
                     self.pc = pc;
                 }
@@ -248,6 +250,10 @@ impl VM<'_> {
                 }
             }
             self.pc += 1;
+        }
+
+        if !self.stack.is_empty() {
+            panic!("Internal Error: Stack is not empty after run");
         }
     }
 
