@@ -9,7 +9,7 @@ pub enum Item {
 #[derive(Debug, PartialEq)]
 pub struct PatternAction {
     pub pattern: Pattern,
-    pub action: Action,
+    pub action: Statement,
 }
 
 #[derive(Debug, PartialEq)]
@@ -20,14 +20,12 @@ pub enum Pattern {
     Expression(Expression),
 }
 
-pub type Action = Vec<Statement>;
-
 #[derive(Debug, PartialEq)]
 pub struct Function {
     pub name: String,
     // 引数リスト
     pub args: Vec<String>,
-    pub action: Action
+    pub action: Statement
 }
 
 #[derive(Debug, PartialEq)]
@@ -80,11 +78,16 @@ pub enum Operator {
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
+    Action(Vec<Statement>),
     Print(Vec<Expression>),
     Expression(Expression),
     While {
         exp: Expression,
-        stat: Action
+        stat: Box<Statement>
+    },
+    If {
+        cond: Expression,
+        stat: Box<Statement>,
     },
     Return(Expression)
 }

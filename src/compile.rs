@@ -11,6 +11,8 @@ type Asm = Vec<OpcodeL>;
 struct CompileEnv {
     // while文が使ったラベルのカウント
     while_label_count: usize,
+    // if文が使ったラベルのカウント
+    if_label_count: usize,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -71,6 +73,7 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     // コンパイル時環境
     let mut env = CompileEnv {
         while_label_count: 0,
+        if_label_count: 0,
     };
 
     // BEGINパターンを探しコンパイル
@@ -110,7 +113,7 @@ fn compile_user_definition_function(
     for func in functions.into_iter() {
         asm.push(OpcodeL::Label(format!("userfn_{}", &func.name)));
         // 関数内のactionであることを伝える方法を用意する
-        compile_action(&func.action, asm, env)?;
+        compile_statement(&func.action, asm, env)?;
         asm.push(OpcodeL::Return);
     }
 
@@ -139,7 +142,7 @@ fn compile_all_begin_pattern(
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm, env)?;
+        compile_statement(&item.action, asm, env)?;
     }
 
     Ok(())
@@ -156,8 +159,7 @@ fn compile_normal_pattern(
         .iter()
         .filter_map(|i| match i {
             ast::Item::PatternAction(i) => {
-                if !matches!(i.pattern, ast::Pattern::Begin)
-                    && !matches!(i.pattern, ast::Pattern::Begin)
+                if !(matches!(i.pattern, ast::Pattern::Begin) || matches!(i.pattern, ast::Pattern::End))
                 {
                     return Some(i);
                 }
@@ -184,13 +186,13 @@ fn compile_normal_pattern(
             let label = format!("exp{}", expression_index);
             compile_expression(e, asm, env)?;
             asm.push(OpcodeL::NIf(label.to_string()));
-            compile_action(&item.action, asm, env)?;
+            compile_statement(&item.action, asm, env)?;
             asm.push(OpcodeL::Label(label));
             expression_index += 1;
 
         // Alwaysパターン
         } else {
-            compile_action(&item.action, asm, env)?;
+            compile_statement(&item.action, asm, env)?;
         }
     }
 
@@ -221,55 +223,71 @@ fn compile_all_end_pattern(
 
     for item in items.into_iter() {
         // actionの列をコンパイル
-        compile_action(&item.action, asm, env)?;
+        compile_statement(&item.action, asm, env)?;
     }
 
     Ok(())
 }
 
 // action ::: {}で囲われた一連のコード
-fn compile_action(
-    action: &ast::Action,
+fn compile_statement(
+    statement: &ast::Statement,
     asm: &mut Asm,
     env: &mut CompileEnv,
 ) -> Result<(), &'static str> {
-    for statement in action.iter() {
-        match statement {
-            // print文
-            ast::Statement::Print(expressions) => {
-                // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
-                for e in expressions.iter() {
-                    compile_expression(e, asm, env)?;
-                }
-                asm.push(OpcodeL::Print(expressions.len()));
+    match statement {
+        // {}で囲われたAction
+        ast::Statement::Action(action) => {
+            for s in action {
+                compile_statement(s, asm, env)?;
             }
+        }
 
-            // 式
-            ast::Statement::Expression(expression) => {
-                // 式単体の場合，最後にpopする
-                compile_expression(expression, asm, env)?;
-                asm.push(OpcodeL::Pop);
-            }
-
-            // while文
-            ast::Statement::While { exp, stat } => {
-                // while文用のラベルを使う
-                let label = env.while_label_count;
-                env.while_label_count += 1;
-
-                asm.push(OpcodeL::Label(format!("while_s_{label}")));
-                compile_expression(exp, asm, env)?;
-                asm.push(OpcodeL::NIf(format!("while_e_{label}")));
-                compile_action(stat, asm, env)?;
-                asm.push(OpcodeL::Jump(format!("while_s_{label}")));
-                asm.push(OpcodeL::Label(format!("while_e_{label}")));
-            }
-            // Return文
-            // TODO: 関数の外でのreturn文をエラーにする
-            ast::Statement::Return(e) => {
+        // print文
+        ast::Statement::Print(expressions) => {
+            // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
+            for e in expressions.iter() {
                 compile_expression(e, asm, env)?;
-                asm.push(OpcodeL::Return);
-            },
+            }
+            asm.push(OpcodeL::Print(expressions.len()));
+        }
+
+        // 式
+        ast::Statement::Expression(expression) => {
+            // 式単体の場合，最後にpopする
+            compile_expression(expression, asm, env)?;
+            asm.push(OpcodeL::Pop);
+        }
+
+        // while文
+        ast::Statement::While { exp, stat } => {
+            // while文用のラベルを使う
+            let label = env.while_label_count;
+            env.while_label_count += 1;
+
+            asm.push(OpcodeL::Label(format!("while_s_{label}")));
+            compile_expression(exp, asm, env)?;
+            asm.push(OpcodeL::NIf(format!("while_e_{label}")));
+            compile_statement(stat, asm, env)?;
+            asm.push(OpcodeL::Jump(format!("while_s_{label}")));
+            asm.push(OpcodeL::Label(format!("while_e_{label}")));
+        }
+
+        // If文
+        ast::Statement::If { cond, stat } => {
+            let label = env.if_label_count;
+            env.if_label_count += 1;
+            compile_expression(cond, asm, env)?;
+            asm.push(OpcodeL::NIf(format!("if_{label}")));
+            compile_statement(stat, asm, env)?;
+            asm.push(OpcodeL::Label(format!("if_{label}")));
+        }
+
+        // Return文
+        // TODO: 関数の外でのreturn文をエラーにする
+        ast::Statement::Return(e) => {
+            compile_expression(e, asm, env)?;
+            asm.push(OpcodeL::Return);
         }
     }
 
@@ -440,10 +458,10 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
 fn test_compile() {
     let ast = vec![ast::Item::PatternAction(ast::PatternAction {
         pattern: ast::Pattern::Begin,
-        action: vec![ast::Statement::Print(vec![
+        action: ast::Statement::Action(vec![ast::Statement::Print(vec![
             ast::Expression::Value(ast::Value::Num(1.0)),
             ast::Expression::Value(ast::Value::Num(2.0)),
-        ])],
+        ])]),
     })];
     let expect = vec![
         Opcode::Push(ast::Value::Num(1.0)),
@@ -460,11 +478,13 @@ fn test_compile() {
 fn test_compile2() {
     let ast = vec![ast::Item::PatternAction(ast::PatternAction {
         pattern: ast::Pattern::Begin,
-        action: vec![ast::Statement::Print(vec![ast::Expression::BinaryOp {
-            op: ast::Operator::Div,
-            left: Box::new(ast::Expression::Value(ast::Value::Num(6.0))),
-            right: Box::new(ast::Expression::Value(ast::Value::Num(2.0))),
-        }])],
+        action: ast::Statement::Action(vec![ast::Statement::Print(vec![
+            ast::Expression::BinaryOp {
+                op: ast::Operator::Div,
+                left: Box::new(ast::Expression::Value(ast::Value::Num(6.0))),
+                right: Box::new(ast::Expression::Value(ast::Value::Num(2.0))),
+            },
+        ])]),
     })];
     let expect = vec![
         Opcode::Push(ast::Value::Num(6.0)),

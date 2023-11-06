@@ -37,8 +37,8 @@ peg::parser! {
             }
 
         // action は {} で囲われていて，それぞれの文は ; で区切られている
-        rule action() -> ast::Action
-            = "{" __ a:(statement() ** (_ [';' | '\n']* _)) __ "}" { a }
+        rule action() -> ast::Statement
+            = "{" __ a:(statement() ** (_ [';' | '\n']* _)) __ "}" { ast::Statement::Action(a) }
 
         // print文 POSIXでは括弧の前に空白を置くことが許可される
         rule statement() -> ast::Statement
@@ -57,7 +57,13 @@ peg::parser! {
                 "while" _ "(" e:expression() _ ")" _ s:action() {
                     ast::Statement::While {
                         exp: e,
-                        stat: s
+                        stat: Box::new(s)
+                    }
+                }
+                "if" _ "(" e:expression() _ ")" __ s:statement() {
+                    ast::Statement::If {
+                        cond: e,
+                        stat: Box::new(s)
                     }
                 }
                 // return文
@@ -210,14 +216,14 @@ fn test_parser() {
     let prg = " BEGIN { print( 123 + 333 , 456 ) } ";
     let expect = vec![ast::Item::PatternAction(ast::PatternAction {
         pattern: ast::Pattern::Begin,
-        action: vec![ast::Statement::Print(vec![
+        action: ast::Statement::Action(vec![ast::Statement::Print(vec![
             ast::Expression::BinaryOp {
                 op: ast::Operator::Add,
                 left: Box::new(ast::Expression::Value(ast::Value::Num(123.0))),
                 right: Box::new(ast::Expression::Value(ast::Value::Num(333.0))),
             },
             ast::Expression::Value(ast::Value::Num(456.0)),
-        ])],
+        ])]),
     })];
     let actual = awk::prog(prg).unwrap();
 
