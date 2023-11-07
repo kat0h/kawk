@@ -60,10 +60,19 @@ peg::parser! {
                         stat: Box::new(s)
                     }
                 }
+                // if else
+                "if" _ "(" e:expression() _ ")" __ s:statement() __ "else" __ es:statement() {
+                    ast::Statement::IfElse {
+                        cond: e,
+                        stat: Box::new(s),
+                        els: Box::new(es)
+                    }
+                }
+                // if
                 "if" _ "(" e:expression() _ ")" __ s:statement() {
                     ast::Statement::If {
                         cond: e,
-                        stat: Box::new(s)
+                        stat: Box::new(s),
                     }
                 }
                 // return文

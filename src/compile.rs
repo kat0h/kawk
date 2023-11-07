@@ -283,6 +283,20 @@ fn compile_statement(
             asm.push(OpcodeL::Label(format!("if_{label}")));
         }
 
+        // If文
+        ast::Statement::IfElse { cond, stat, els } => {
+            let label = env.if_label_count;
+            env.if_label_count += 1;
+
+            compile_expression(cond, asm, env)?;
+            asm.push(OpcodeL::NIf(format!("if_{label}")));
+            compile_statement(stat, asm, env)?;
+            asm.push(OpcodeL::Jump(format!("if_elskip_{label}")));
+            asm.push(OpcodeL::Label(format!("if_{label}")));
+            compile_statement(els, asm, env)?;
+            asm.push(OpcodeL::Label(format!("if_elskip_{label}")));
+        }
+
         // Return文
         // TODO: 関数の外でのreturn文をエラーにする
         ast::Statement::Return(e) => {

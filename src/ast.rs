@@ -89,6 +89,11 @@ pub enum Statement {
         cond: Expression,
         stat: Box<Statement>,
     },
+    IfElse {
+        cond: Expression,
+        stat: Box<Statement>,
+        els: Box<Statement>
+    },
     Return(Expression)
 }
 
