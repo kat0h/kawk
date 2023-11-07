@@ -82,6 +82,7 @@ peg::parser! {
                 "return" {
                     ast::Statement::Return(ast::Expression::Value(ast::Value::None))
                 }
+                "{" __ s:statement() __ "}" { s }
             }
 
         // 式
