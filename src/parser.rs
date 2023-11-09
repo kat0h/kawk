@@ -23,7 +23,7 @@ peg::parser! {
             // = "function" _ name:name() "(" _ args:(name() ** (_ "," _))  _ ")" __ action:action() {
             //    ast::Item::Function(ast::Function { name, args, action })
             // }
-            = "function" _ name:name() "(" ")" __ action:action() {
+            = "function" _ name:name() "(" _ name() ** (_ "," _) ")" __ action:action() {
                ast::Item::Function(ast::Function { name, args: vec![], action })
             }
 

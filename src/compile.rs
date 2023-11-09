@@ -114,6 +114,8 @@ fn compile_user_definition_function(
         asm.push(OpcodeL::Label(format!("userfn_{}", &func.name)));
         // 関数内のactionであることを伝える方法を用意する
         compile_statement(&func.action, asm, env)?;
+        // 空returnはnoneを返す
+        asm.push(OpcodeL::Push(ast::Value::None));
         asm.push(OpcodeL::Return);
     }
 
