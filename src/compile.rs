@@ -256,7 +256,6 @@ fn compile_statement(
 
         // print文
         ast::Statement::Print(expressions) => {
-            // 表示する式を逆順に取り出し，pushしてから最後にOpcodeL::Print(len)
             for e in expressions.iter() {
                 compile_expression(e, asm, env)?;
             }
@@ -372,7 +371,7 @@ fn compile_expression(
         }
         ast::Expression::CallUserFunc { name, args } => {
             // 引数をpushする(前から)
-            for a in args.iter().rev() {
+            for a in args.iter() {
                 compile_expression(a, asm, env)?;
             }
             // 引数の数をpushする

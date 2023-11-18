@@ -138,10 +138,11 @@ impl VM<'_> {
                     self.func_env.push(vec![]);
                     // 引数を読み込み
                     let argv = self.stack.pop().unwrap().to_float() as usize;
+                    let args = self.func_env.last_mut().unwrap();
                     for _ in 0..argv {
-                        let args = self.func_env.last_mut().unwrap();
                         args.push(self.stack.pop().unwrap());
                     }
+                    args.reverse();
                     // pcに1を足されると困るのでcontinue(jumpと同じ挙動)
                     continue;
                 }
