@@ -1,5 +1,5 @@
-mod value;
 pub mod ifunc;
+mod value;
 use crate::ast::Value;
 use crate::ifunc::call_internal_func_from_index;
 
@@ -43,7 +43,7 @@ pub enum Opcode {
     SetVar(usize),
     // For stack frame
     LoadSFVar(usize),
-    SetSFVar(usize)
+    SetSFVar(usize),
 }
 
 pub struct VM<'a> {
@@ -60,7 +60,7 @@ pub struct VM<'a> {
     // 戻り先pc
     retpc: Vec<usize>,
     // Stack frame 呼び出しで新しく作られ，returnで消される
-    func_env: Vec<Vec<Value>>
+    func_env: Vec<Vec<Value>>,
 }
 
 // TODO
@@ -77,7 +77,7 @@ impl VM<'_> {
             nf: Value::Num(0.0),
             env: vec![],
             retpc: vec![],
-            func_env: vec![]
+            func_env: vec![],
         }
     }
 

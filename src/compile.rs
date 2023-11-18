@@ -14,7 +14,7 @@ struct CompileEnv {
     // if文が使ったラベルのカウント
     if_label_count: usize,
     // 関数の引数
-    func_args: Vec<String>
+    func_args: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -78,7 +78,7 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     let mut env = CompileEnv {
         while_label_count: 0,
         if_label_count: 0,
-        func_args: vec![]
+        func_args: vec![],
     };
 
     // BEGINパターンを探しコンパイル
@@ -169,7 +169,8 @@ fn compile_normal_pattern(
         .iter()
         .filter_map(|i| match i {
             ast::Item::PatternAction(i) => {
-                if !(matches!(i.pattern, ast::Pattern::Begin) || matches!(i.pattern, ast::Pattern::End))
+                if !(matches!(i.pattern, ast::Pattern::Begin)
+                    || matches!(i.pattern, ast::Pattern::End))
                 {
                     return Some(i);
                 }
@@ -350,7 +351,7 @@ fn compile_expression(
             }
         },
         ast::Expression::Assign { lval, expr } => {
-        // TODO: 引数の書き換え
+            // TODO: 引数の書き換え
             compile_expression(expr, asm, env)?;
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
@@ -485,8 +486,8 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
             OpcodeL::LoadVar(n) => Opcode::LoadVar(*names.get(n).unwrap()),
             OpcodeL::SetVar(n) => Opcode::SetVar(*names.get(n).unwrap()),
-            OpcodeL::LoadSFVar(n) =>  Opcode::LoadSFVar(*n),
-            OpcodeL::SetSFVar(n) =>  Opcode::SetSFVar(*n),
+            OpcodeL::LoadSFVar(n) => Opcode::LoadSFVar(*n),
+            OpcodeL::SetSFVar(n) => Opcode::SetSFVar(*n),
             // ジャンプ先を示す
             OpcodeL::Label(_label) => unreachable!(),
         })
@@ -537,4 +538,3 @@ fn test_compile2() {
 
     assert_eq!(&expect, &actual);
 }
-

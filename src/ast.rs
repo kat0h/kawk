@@ -3,7 +3,7 @@ pub type Program = Vec<Item>;
 #[derive(Debug, PartialEq)]
 pub enum Item {
     PatternAction(PatternAction),
-    Function(Function)
+    Function(Function),
 }
 
 #[derive(Debug, PartialEq)]
@@ -25,7 +25,7 @@ pub struct Function {
     pub name: String,
     // 引数リスト
     pub args: Vec<String>,
-    pub action: Statement
+    pub action: Statement,
 }
 
 #[derive(Debug, PartialEq)]
@@ -44,12 +44,12 @@ pub enum Expression {
     },
     CallIFunc {
         name: String,
-        args: Vec<Expression>
+        args: Vec<Expression>,
     },
     CallUserFunc {
         name: String,
-        args: Vec<Expression>
-    }
+        args: Vec<Expression>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -83,7 +83,7 @@ pub enum Statement {
     Expression(Expression),
     While {
         exp: Expression,
-        stat: Box<Statement>
+        stat: Box<Statement>,
     },
     If {
         cond: Expression,
@@ -92,9 +92,9 @@ pub enum Statement {
     IfElse {
         cond: Expression,
         stat: Box<Statement>,
-        els: Box<Statement>
+        els: Box<Statement>,
     },
-    Return(Expression)
+    Return(Expression),
 }
 
 #[derive(Debug, PartialEq, Clone)]
