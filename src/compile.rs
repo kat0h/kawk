@@ -13,6 +13,8 @@ struct CompileEnv {
     while_label_count: usize,
     // if文が使ったラベルのカウント
     if_label_count: usize,
+    // 関数の引数
+    func_args: Vec<String>
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -50,6 +52,8 @@ enum OpcodeL {
     InitEnv(usize),
     LoadVar(String),
     SetVar(String),
+    LoadSFVar(usize),
+    SetSFVar(usize),
     // ジャンプ先を示す
     Label(String),
 }
@@ -74,6 +78,7 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     let mut env = CompileEnv {
         while_label_count: 0,
         if_label_count: 0,
+        func_args: vec![]
     };
 
     // BEGINパターンを探しコンパイル
@@ -111,12 +116,15 @@ fn compile_user_definition_function(
         .collect::<Vec<_>>();
 
     for func in functions.into_iter() {
+        // 引数
+        env.func_args = func.args.clone();
         asm.push(OpcodeL::Label(format!("userfn_{}", &func.name)));
         // 関数内のactionであることを伝える方法を用意する
         compile_statement(&func.action, asm, env)?;
         // 空returnはnoneを返す
         asm.push(OpcodeL::Push(ast::Value::None));
         asm.push(OpcodeL::Return);
+        env.func_args = vec![];
     }
 
     Ok(())
@@ -313,7 +321,7 @@ fn compile_statement(
 fn compile_expression(
     expression: &ast::Expression,
     asm: &mut Asm,
-    _env: &mut CompileEnv,
+    env: &mut CompileEnv,
 ) -> Result<(), &'static str> {
     // 式をコンパイル
     // compile_expressionはeval関数のように再帰しながら式をコンパイルする
@@ -322,20 +330,28 @@ fn compile_expression(
             asm.push(OpcodeL::Push(v.clone()));
         }
         ast::Expression::BinaryOp { op, left, right } => {
-            compile_expression(left, asm, _env)?;
-            compile_expression(right, asm, _env)?;
+            compile_expression(left, asm, env)?;
+            compile_expression(right, asm, env)?;
             compile_operator(op, asm);
         }
         ast::Expression::GetField(e) => {
-            compile_expression(e, asm, _env)?;
+            compile_expression(e, asm, env)?;
             asm.push(OpcodeL::GetField);
         }
         ast::Expression::LValue(lvalue) => match lvalue {
             // 関数の引数はどうやって処理する？
-            ast::LValue::Name(name) => asm.push(OpcodeL::LoadVar(name.to_string())),
+            ast::LValue::Name(name) => {
+                if let Some(sfi) = env.func_args.iter().position(|n| n == name) {
+                    asm.push(OpcodeL::LoadSFVar(sfi));
+                } else {
+                    // 関数の引数にない場合
+                    asm.push(OpcodeL::LoadVar(name.to_string()));
+                }
+            }
         },
         ast::Expression::Assign { lval, expr } => {
-            compile_expression(expr, asm, _env)?;
+        // TODO: 引数の書き換え
+            compile_expression(expr, asm, env)?;
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
             }
@@ -343,7 +359,7 @@ fn compile_expression(
         }
         ast::Expression::CallIFunc { name, args } => {
             for e in args.iter().rev() {
-                compile_expression(e, asm, _env)?;
+                compile_expression(e, asm, env)?;
             }
             let index = ifunc::get_index_from_name(name).unwrap();
             if args.len() != ifunc::get_len_of_args(index) {
@@ -353,7 +369,13 @@ fn compile_expression(
             // ここで引数の個数はチェックしたい
             asm.push(OpcodeL::Call(index));
         }
-        ast::Expression::CallUserFunc { name, args: _ } => {
+        ast::Expression::CallUserFunc { name, args } => {
+            // 引数をpushする(前から)
+            for a in args.iter().rev() {
+                compile_expression(a, asm, env)?;
+            }
+            // 引数の数をpushする
+            asm.push(OpcodeL::Push(ast::Value::Num(args.len() as f64)));
             asm.push(OpcodeL::CallUserFunc(format!("userfn_{}", name)));
         }
     }
@@ -463,6 +485,8 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
             OpcodeL::LoadVar(n) => Opcode::LoadVar(*names.get(n).unwrap()),
             OpcodeL::SetVar(n) => Opcode::SetVar(*names.get(n).unwrap()),
+            OpcodeL::LoadSFVar(n) =>  Opcode::LoadSFVar(*n),
+            OpcodeL::SetSFVar(n) =>  Opcode::SetSFVar(*n),
             // ジャンプ先を示す
             OpcodeL::Label(_label) => unreachable!(),
         })
@@ -513,3 +537,4 @@ fn test_compile2() {
 
     assert_eq!(&expect, &actual);
 }
+

@@ -23,8 +23,8 @@ peg::parser! {
             // = "function" _ name:name() "(" _ args:(name() ** (_ "," _))  _ ")" __ action:action() {
             //    ast::Item::Function(ast::Function { name, args, action })
             // }
-            = "function" _ name:name() "(" _ name() ** (_ "," _) ")" __ action:action() {
-               ast::Item::Function(ast::Function { name, args: vec![], action })
+            = "function" _ name:name() "(" _ args:name() ** (_ "," _) ")" __ action:action() {
+               ast::Item::Function(ast::Function { name, args, action })
             }
 
         // BEGIN / END / 条件式など
@@ -82,7 +82,7 @@ peg::parser! {
                 "return" {
                     ast::Statement::Return(ast::Expression::Value(ast::Value::None))
                 }
-                "{" __ s:statement() __ "}" { s }
+                a:action() { a }
             }
 
         // 式
@@ -182,7 +182,7 @@ peg::parser! {
                     ast::Expression::CallIFunc { name, args }
                 } else {
                     // ast::Expression::CallUserFunc { name, args }
-                    ast::Expression::CallUserFunc { name, args: vec![] }
+                    ast::Expression::CallUserFunc { name, args }
                 }
             }
 

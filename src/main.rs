@@ -1,7 +1,7 @@
 use getopts::Options;
+use indoc::indoc;
 use std::fs::File;
 use std::io::prelude::*;
-use indoc::indoc;
 
 mod ast;
 mod compile;
@@ -27,7 +27,7 @@ enum DebugLevel {
     None,
     Ast,
     ByteCode,
-    Env
+    Env,
 }
 
 fn main() {
@@ -35,7 +35,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut option = Opts {
         program_name: args[0].clone(),
-        debuglevel: DebugLevel::None
+        debuglevel: DebugLevel::None,
     };
 
     let mut opts = Options::new();
@@ -85,7 +85,10 @@ fn main() {
         match f.read_to_string(&mut contents) {
             Ok(_) => (),
             Err(err) => {
-                eprintln!("{}: fatal: cannot read source file `{}': {}", option.program_name, filename, err);
+                eprintln!(
+                    "{}: fatal: cannot read source file `{}': {}",
+                    option.program_name, filename, err
+                );
                 return;
             }
         };
@@ -150,7 +153,7 @@ fn print_usage(binary_name: &str) {
 
 fn print_help(binary_name: &str) {
     println!(
-        indoc!{"
+        indoc! {"
             Usage: {} [options] 
             options:
                     -f progfile
@@ -198,6 +201,8 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::InitEnv(_) => "initenv",
             vm::Opcode::LoadVar(_) => "loadval",
             vm::Opcode::SetVar(_) => "setval",
+            vm::Opcode::LoadSFVar(_) => "loadsfvar",
+            vm::Opcode::SetSFVar(_) => "setsfvar",
         };
 
         let arg = match opcode {
@@ -212,6 +217,8 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::InitEnv(n) => n.to_string(),
             vm::Opcode::LoadVar(n) => n.to_string(),
             vm::Opcode::SetVar(n) => n.to_string(),
+            vm::Opcode::LoadSFVar(n) => n.to_string(),
+            vm::Opcode::SetSFVar(n) => n.to_string(),
             _ => "".to_string(),
         };
 

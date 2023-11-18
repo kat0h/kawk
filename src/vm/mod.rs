@@ -41,6 +41,9 @@ pub enum Opcode {
     InitEnv(usize),
     LoadVar(usize),
     SetVar(usize),
+    // For stack frame
+    LoadSFVar(usize),
+    SetSFVar(usize)
 }
 
 pub struct VM<'a> {
@@ -48,10 +51,16 @@ pub struct VM<'a> {
     stack: Vec<Value>,
     pc: usize,
 
+    // フィールド
     fields: Vec<String>,
+    // NF(Number of fields)
     nf: Value,
+    // 環境
     env: Vec<Value>,
+    // 戻り先pc
     retpc: Vec<usize>,
+    // Stack frame 呼び出しで新しく作られ，returnで消される
+    func_env: Vec<Vec<Value>>
 }
 
 // TODO
@@ -68,6 +77,7 @@ impl VM<'_> {
             nf: Value::Num(0.0),
             env: vec![],
             retpc: vec![],
+            func_env: vec![]
         }
     }
 
@@ -124,6 +134,14 @@ impl VM<'_> {
                     // プログラムカウンタを保存
                     self.retpc.push(self.pc);
                     self.pc = *i;
+                    // make stack frame
+                    self.func_env.push(vec![]);
+                    // 引数を読み込み
+                    let argv = self.stack.pop().unwrap().to_float() as usize;
+                    for _ in 0..argv {
+                        let args = self.func_env.last_mut().unwrap();
+                        args.push(self.stack.pop().unwrap());
+                    }
                     // pcに1を足されると困るのでcontinue(jumpと同じ挙動)
                     continue;
                 }
@@ -132,6 +150,8 @@ impl VM<'_> {
                 // 戻り先pcスタックから一つ取り出し，プログラムカウンタをセットします
                 Opcode::Return => {
                     let pc = self.retpc.pop().unwrap();
+                    // drpo stack frame
+                    self.func_env.pop();
                     self.pc = pc;
                 }
 
@@ -246,6 +266,15 @@ impl VM<'_> {
                 Opcode::SetVar(n) => {
                     let val = self.stack.pop().unwrap();
                     self.env[*n] = val;
+                }
+                Opcode::LoadSFVar(n) => {
+                    let top = self.func_env.last_mut().unwrap();
+                    self.stack.push(top[*n].clone());
+                }
+                Opcode::SetSFVar(n) => {
+                    let top = self.func_env.last_mut().unwrap();
+                    let val = self.stack.pop().unwrap();
+                    top[*n] = val;
                 }
             }
             self.pc += 1;
