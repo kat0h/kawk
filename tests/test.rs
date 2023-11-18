@@ -3,8 +3,11 @@ use assert_cmd::Command;
 #[test]
 fn test_my_command() {
     let test_sets = [
+        // 基本の入出力
         ["BEGIN{print 1}", "", "1\n"],
+        // 標準入力
         ["{sum+=$1};END{print sum}", "1\n2\n3\n", "6\n"],
+        // While文
         [
             "
                 BEGIN {
@@ -20,6 +23,7 @@ fn test_my_command() {
             "",
             "55\n",
         ],
+        // 引数のない関数呼び出し
         [
             "
                 function test() {
@@ -39,6 +43,7 @@ fn test_my_command() {
             "",
             "1\n2\n3\n",
         ],
+        // if文
         [
             "
                 BEGIN {
@@ -55,6 +60,7 @@ fn test_my_command() {
             "",
             "1\n3\n",
         ],
+        // 引数のある関数
         [
             "
                 function add(a, b) {
@@ -68,6 +74,7 @@ fn test_my_command() {
             "",
             "3\n",
         ],
+        // 関数の引数の呼び出し順序
         [
             "
                 function counter() {
@@ -87,6 +94,24 @@ fn test_my_command() {
             "",
             "1 2 3\n4 5 6\n",
         ],
+        // 関数の再帰呼び出し
+        [
+            "
+                function hanoi(n, a, b, c) {
+                  if (n > 0) {
+                    hanoi(n-1, a, c, b)
+                    print a, \"->\", b
+                    hanoi(n-1, c, b, a)
+                  }
+                }
+
+                BEGIN {
+                  hanoi(3, \"A\", \"B\", \"C\")
+                }
+            ",
+            "",
+            "A -> B\nA -> C\nB -> C\nA -> B\nC -> A\nC -> B\nA -> B\n"
+        ]
         // [
         //     "",
         //     "",
