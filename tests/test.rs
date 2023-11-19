@@ -110,13 +110,12 @@ fn test_my_command() {
                 }
             ",
             "",
-            "A -> B\nA -> C\nB -> C\nA -> B\nC -> A\nC -> B\nA -> B\n"
-        ]
-        // [
-        //     "",
-        //     "",
-        //     ""
-        // ],
+            "A -> B\nA -> C\nB -> C\nA -> B\nC -> A\nC -> B\nA -> B\n",
+        ], // [
+           //     "",
+           //     "",
+           //     ""
+           // ],
     ];
     for set in test_sets {
         let mut cmd = Command::cargo_bin("kawk").expect("Failed to find binary");
