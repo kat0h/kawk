@@ -48,6 +48,7 @@ pub enum Opcode {
 
 pub struct VM<'a> {
     program: &'a [Opcode],
+    // Valueスタック
     stack: Vec<Value>,
     pc: usize,
 
@@ -57,7 +58,7 @@ pub struct VM<'a> {
     nf: Value,
     // 環境
     env: Vec<Value>,
-    // 戻り先pc
+    // 戻り先pc 制御スタック
     retpc: Vec<usize>,
     // Stack frame 呼び出しで新しく作られ，returnで消される
     func_env: Vec<Vec<Value>>,

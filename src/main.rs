@@ -17,6 +17,8 @@ mod vm;
  *   'program'     : programを実行
  */
 
+// 速度計測
+
 struct Opts {
     program_name: String,
     debuglevel: DebugLevel,

@@ -7,5 +7,5 @@ function hanoi(n, a, b, c) {
 }
 
 BEGIN {
-  hanoi(3, "A", "B", "C")
+  hanoi(9, "A", "B", "C")
 }
