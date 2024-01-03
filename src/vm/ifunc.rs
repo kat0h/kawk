@@ -18,3 +18,15 @@ pub fn ifunc_exp(vm: &mut VM) {
     let ret = Value::Num(arg.to_float().exp());
     vm.stack.push(ret);
 }
+
+pub fn ifunc_tolower(vm: &mut VM) {
+    let arg = vm.stack.pop().unwrap();
+    let ret = Value::Str(arg.to_str().to_lowercase());
+    vm.stack.push(ret);
+}
+
+pub fn ifunc_toupper(vm: &mut VM) {
+    let arg = vm.stack.pop().unwrap();
+    let ret = Value::Str(arg.to_str().to_uppercase());
+    vm.stack.push(ret);
+}

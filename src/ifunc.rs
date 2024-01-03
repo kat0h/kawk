@@ -25,6 +25,16 @@ const INTERNAL_FUNC: &[IFunc] = &[
         func: ifunc::ifunc_exp,
         arglen: 1,
     },
+    IFunc {
+        name: "tolower",
+        func: ifunc::ifunc_tolower,
+        arglen: 1,
+    },
+    IFunc {
+        name: "toupper",
+        func: ifunc::ifunc_toupper,
+        arglen: 1,
+    },
 ];
 
 pub fn get_index_from_name(name: &str) -> Option<usize> {
