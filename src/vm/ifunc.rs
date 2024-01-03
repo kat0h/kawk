@@ -1,5 +1,6 @@
 use crate::ast::Value;
 use crate::vm::VM;
+use rand::prelude::*;
 
 pub fn ifunc_sin(vm: &mut VM) {
     let arg = vm.stack.pop().unwrap();
@@ -29,4 +30,9 @@ pub fn ifunc_toupper(vm: &mut VM) {
     let arg = vm.stack.pop().unwrap();
     let ret = Value::Str(arg.to_str().to_uppercase());
     vm.stack.push(ret);
+}
+
+pub fn ifunc_rand(vm: &mut VM) {
+    let mut rng = rand::thread_rng();
+    vm.stack.push(Value::Num(rng.gen()));
 }
