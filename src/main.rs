@@ -201,8 +201,10 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::GetField => "getfield",
             // Variable
             vm::Opcode::InitEnv(_) => "initenv",
+            vm::Opcode::InitEnvArray(_) => "initenvarray",
             vm::Opcode::LoadVar(_) => "loadval",
             vm::Opcode::SetVar(_) => "setval",
+            vm::Opcode::LoadArray(_) => "loadarray",
             vm::Opcode::LoadSFVar(_) => "loadsfvar",
             vm::Opcode::SetSFVar(_) => "setsfvar",
         };
@@ -219,6 +221,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::InitEnv(n) => n.to_string(),
             vm::Opcode::LoadVar(n) => n.to_string(),
             vm::Opcode::SetVar(n) => n.to_string(),
+            vm::Opcode::LoadArray(n) => n.to_string(),
             vm::Opcode::LoadSFVar(n) => n.to_string(),
             vm::Opcode::SetSFVar(n) => n.to_string(),
             _ => "".to_string(),

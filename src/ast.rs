@@ -28,7 +28,7 @@ pub struct Function {
     pub action: Statement,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Value(Value),
     BinaryOp {
@@ -55,9 +55,13 @@ pub enum Expression {
 #[derive(Debug, PartialEq, Clone)]
 pub enum LValue {
     Name(String),
+    Array {
+        name: String,
+        expr_list: Vec<Expression>,
+    },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     Add,              // +
     Sub,              // -

@@ -2,6 +2,7 @@ pub mod ifunc;
 mod value;
 use crate::ast::Value;
 use crate::ifunc::call_internal_func_from_index;
+use std::collections::HashMap;
 
 use std::io::{BufRead, Write};
 
@@ -39,8 +40,10 @@ pub enum Opcode {
     GetField,
     // Variable
     InitEnv(usize),
+    InitEnvArray(usize),
     LoadVar(usize),
     SetVar(usize),
+    LoadArray(usize),
     // For stack frame
     LoadSFVar(usize),
     SetSFVar(usize),
@@ -58,6 +61,7 @@ pub struct VM<'a> {
     nf: Value,
     // 環境
     env: Vec<Value>,
+    envarray: Vec<HashMap<String, Value>>,
     // 戻り先pc 制御スタック
     retpc: Vec<usize>,
     // Stack frame 呼び出しで新しく作られ，returnで消される
@@ -77,6 +81,7 @@ impl VM<'_> {
             fields: vec![],
             nf: Value::Num(0.0),
             env: vec![],
+            envarray: vec![],
             retpc: vec![],
             func_env: vec![],
         }
@@ -262,6 +267,10 @@ impl VM<'_> {
                 Opcode::InitEnv(n) => {
                     self.env = vec![Value::None; *n];
                 }
+                Opcode::InitEnvArray(n) => {
+                    self.envarray = vec![HashMap::new(); *n];
+                    // テスト用に0番目の0に値を入れておく
+                }
                 Opcode::LoadVar(n) => {
                     self.stack.push(self.env[*n].clone());
                 }
@@ -269,10 +278,19 @@ impl VM<'_> {
                     let val = self.stack.pop().unwrap();
                     self.env[*n] = val;
                 }
+                // 配列(連想配列)から値を取り出す
+                Opcode::LoadArray(n) => {
+                    // 二次元配列の取り扱いは想定していない
+                    let index = self.stack.pop().unwrap().to_str();
+                    let val = self.envarray[*n].get(&index).unwrap_or(&Value::None).clone();
+                    self.stack.push(val);
+                }
+                // 関数ローカル変数のn番目の値をスタックにpush
                 Opcode::LoadSFVar(n) => {
                     let top = self.func_env.last_mut().unwrap();
                     self.stack.push(top[*n].clone());
                 }
+                // 関数ローカル変数のn番目の値にスタックのトップの値を入れる
                 Opcode::SetSFVar(n) => {
                     let top = self.func_env.last_mut().unwrap();
                     let val = self.stack.pop().unwrap();

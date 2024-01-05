@@ -50,8 +50,10 @@ enum OpcodeL {
     GetField,
     // Variable
     InitEnv(usize),
+    InitEnvArray(usize),
     LoadVar(String),
     SetVar(String),
+    LoadArray(String),
     LoadSFVar(usize),
     SetSFVar(usize),
     // ジャンプ先を示す
@@ -339,7 +341,6 @@ fn compile_expression(
             asm.push(OpcodeL::GetField);
         }
         ast::Expression::LValue(lvalue) => match lvalue {
-            // 関数の引数はどうやって処理する？
             ast::LValue::Name(name) => {
                 if let Some(sfi) = env.func_args.iter().position(|n| n == name) {
                     asm.push(OpcodeL::LoadSFVar(sfi));
@@ -348,12 +349,22 @@ fn compile_expression(
                     asm.push(OpcodeL::LoadVar(name.to_string()));
                 }
             }
+            ast::LValue::Array { name, expr_list } => {
+                // 順番に注意
+                for expr in expr_list.iter() {
+                    compile_expression(expr, asm, env)?;
+                }
+                asm.push(OpcodeL::LoadArray(name.to_string()));
+            }
         },
         ast::Expression::Assign { lval, expr } => {
             // TODO: 引数の書き換え
             compile_expression(expr, asm, env)?;
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
+                ast::LValue::Array { name: _name, expr_list: _expr_list } => {
+                    // TODO: 実装
+                }
             }
             asm.push(OpcodeL::Push(Value::None));
         }
@@ -408,6 +419,7 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
 
     // 変数名の解決
     let mut names: HashMap<String, usize> = HashMap::new();
+    let mut arraynames: HashMap<String, usize> = HashMap::new();
     // 全ての変数名を探索
     for i in a.iter() {
         if let OpcodeL::SetVar(name) = i {
@@ -420,11 +432,19 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
                 names.insert(name.to_string(), names.len());
             }
         }
+        if let OpcodeL::LoadArray(name) = i {
+            if arraynames.get(name).is_none() {
+                arraynames.insert(name.to_string(), arraynames.len());
+            }
+        }
     }
 
     // 変数分の領域を確保
     if !names.is_empty() {
         a.insert(0, OpcodeL::InitEnv(names.len()));
+    }
+    if !arraynames.is_empty() {
+        a.insert(1, OpcodeL::InitEnvArray(arraynames.len()));
     }
 
     // ラベル名の解決
@@ -483,8 +503,10 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             OpcodeL::GetField => Opcode::GetField,
             // Variable
             OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
+            OpcodeL::InitEnvArray(n) => Opcode::InitEnvArray(*n),
             OpcodeL::LoadVar(n) => Opcode::LoadVar(*names.get(n).unwrap()),
             OpcodeL::SetVar(n) => Opcode::SetVar(*names.get(n).unwrap()),
+            OpcodeL::LoadArray(n) => Opcode::LoadArray(*arraynames.get(n).unwrap()),
             OpcodeL::LoadSFVar(n) => Opcode::LoadSFVar(*n),
             OpcodeL::SetSFVar(n) => Opcode::SetSFVar(*n),
             // ジャンプ先を示す
