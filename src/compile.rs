@@ -362,7 +362,13 @@ fn compile_expression(
             // TODO: 引数の書き換え
             compile_expression(expr, asm, env)?;
             match lval {
-                ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
+                ast::LValue::Name(name) => {
+                    if let Some(sfi) = env.func_args.iter().position(|n| n == name) {
+                        asm.push(OpcodeL::SetSFVar(sfi));
+                    } else {
+                        asm.push(OpcodeL::SetVar(name.to_string()))
+                    }
+                }
                 ast::LValue::Array { name, expr_list } => {
                     for expr in expr_list.iter() {
                         compile_expression(expr, asm, env)?;
