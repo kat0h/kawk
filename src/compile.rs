@@ -54,6 +54,7 @@ enum OpcodeL {
     LoadVar(String),
     SetVar(String),
     LoadArray(String),
+    SetArray(String),
     LoadSFVar(usize),
     SetSFVar(usize),
     // ジャンプ先を示す
@@ -362,8 +363,11 @@ fn compile_expression(
             compile_expression(expr, asm, env)?;
             match lval {
                 ast::LValue::Name(name) => asm.push(OpcodeL::SetVar(name.to_string())),
-                ast::LValue::Array { name: _name, expr_list: _expr_list } => {
-                    // TODO: 実装
+                ast::LValue::Array { name, expr_list } => {
+                    for expr in expr_list.iter() {
+                        compile_expression(expr, asm, env)?;
+                    }
+                    asm.push(OpcodeL::SetArray(name.to_string()));
                 }
             }
             asm.push(OpcodeL::Push(Value::None));
@@ -437,14 +441,19 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
                 arraynames.insert(name.to_string(), arraynames.len());
             }
         }
+        if let OpcodeL::SetArray(name) = i {
+            if arraynames.get(name).is_none() {
+                arraynames.insert(name.to_string(), arraynames.len());
+            }
+        }
     }
 
     // 変数分の領域を確保
+    if !arraynames.is_empty() {
+        a.insert(0, OpcodeL::InitEnvArray(arraynames.len()));
+    }
     if !names.is_empty() {
         a.insert(0, OpcodeL::InitEnv(names.len()));
-    }
-    if !arraynames.is_empty() {
-        a.insert(1, OpcodeL::InitEnvArray(arraynames.len()));
     }
 
     // ラベル名の解決
@@ -505,6 +514,7 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
             OpcodeL::InitEnvArray(n) => Opcode::InitEnvArray(*n),
             OpcodeL::LoadVar(n) => Opcode::LoadVar(*names.get(n).unwrap()),
+            OpcodeL::SetArray(n) => Opcode::SetArray(*arraynames.get(n).unwrap()),
             OpcodeL::SetVar(n) => Opcode::SetVar(*names.get(n).unwrap()),
             OpcodeL::LoadArray(n) => Opcode::LoadArray(*arraynames.get(n).unwrap()),
             OpcodeL::LoadSFVar(n) => Opcode::LoadSFVar(*n),

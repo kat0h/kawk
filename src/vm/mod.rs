@@ -44,6 +44,7 @@ pub enum Opcode {
     LoadVar(usize),
     SetVar(usize),
     LoadArray(usize),
+    SetArray(usize),
     // For stack frame
     LoadSFVar(usize),
     SetSFVar(usize),
@@ -269,8 +270,6 @@ impl VM<'_> {
                 }
                 Opcode::InitEnvArray(n) => {
                     self.envarray = vec![HashMap::new(); *n];
-                    // テスト用に0番目の0に値を入れておく
-                    self.envarray[0].insert(0.to_string(), Value::Str("Array Test".to_string()));
                 }
                 Opcode::LoadVar(n) => {
                     self.stack.push(self.env[*n].clone());
@@ -285,6 +284,11 @@ impl VM<'_> {
                     let index = self.stack.pop().unwrap().to_str();
                     let val = self.envarray[*n].get(&index).unwrap_or(&Value::None).clone();
                     self.stack.push(val);
+                }
+                Opcode::SetArray(n) => {
+                    let index = self.stack.pop().unwrap().to_str();
+                    let value = self.stack.pop().unwrap();
+                    self.envarray[*n].insert(index, value);
                 }
                 // 関数ローカル変数のn番目の値をスタックにpush
                 Opcode::LoadSFVar(n) => {

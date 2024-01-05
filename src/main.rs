@@ -205,6 +205,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::LoadVar(_) => "loadval",
             vm::Opcode::SetVar(_) => "setval",
             vm::Opcode::LoadArray(_) => "loadarray",
+            vm::Opcode::SetArray(_) => "setarray",
             vm::Opcode::LoadSFVar(_) => "loadsfvar",
             vm::Opcode::SetSFVar(_) => "setsfvar",
         };
@@ -223,6 +224,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::LoadVar(n) => n.to_string(),
             vm::Opcode::SetVar(n) => n.to_string(),
             vm::Opcode::LoadArray(n) => n.to_string(),
+            vm::Opcode::SetArray(n) => n.to_string(),
             vm::Opcode::LoadSFVar(n) => n.to_string(),
             vm::Opcode::SetSFVar(n) => n.to_string(),
             _ => "".to_string(),
