@@ -111,11 +111,29 @@ fn test_my_command() {
             ",
             "",
             "A -> B\nA -> C\nB -> C\nA -> B\nC -> A\nC -> B\nA -> B\n",
-        ], // [
-           //     "",
-           //     "",
-           //     ""
-           // ],
+        ],
+        [
+            "
+            function func1(var) {
+              var = \"test\";
+              var2 = \"test2\"
+              print var
+            }
+
+            BEGIN {
+              func1(11)
+              print var
+              print var2
+            }
+            ",
+            "",
+            "test\n\ntest2\n"
+        ],
+        // [
+        //     "",
+        //     "",
+        //     ""
+        // ],
     ];
     for set in test_sets {
         let mut cmd = Command::cargo_bin("kawk").expect("Failed to find binary");
