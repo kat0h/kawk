@@ -270,6 +270,7 @@ impl VM<'_> {
                 Opcode::InitEnvArray(n) => {
                     self.envarray = vec![HashMap::new(); *n];
                     // テスト用に0番目の0に値を入れておく
+                    self.envarray[0].insert(0.to_string(), Value::Str("Array Test".to_string()));
                 }
                 Opcode::LoadVar(n) => {
                     self.stack.push(self.env[*n].clone());

@@ -219,6 +219,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::CallUserFunc(i) => i.to_string(),
             vm::Opcode::Print(l) => l.to_string(),
             vm::Opcode::InitEnv(n) => n.to_string(),
+            vm::Opcode::InitEnvArray(n) => n.to_string(),
             vm::Opcode::LoadVar(n) => n.to_string(),
             vm::Opcode::SetVar(n) => n.to_string(),
             vm::Opcode::LoadArray(n) => n.to_string(),

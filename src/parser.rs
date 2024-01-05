@@ -196,7 +196,8 @@ peg::parser! {
             }
 
         rule lvalue() -> ast::LValue
-            = l:name() { ast::LValue::Name(l) }
+            = l:name() "[" e:expression() "]" { ast::LValue::Array { name: l, expr_list: vec![e]} }
+            / l:name() { ast::LValue::Name(l) }
 
         // 数字 (もっと詳しくパースできるように)
         pub rule number() -> f64
