@@ -100,7 +100,22 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
 
     Ok(asm_to_vmprogram(&asm, &mut env))
 }
-
+/*
+* ユーザー定義関数の仕様についてのメモ:
+* ・現状
+*      定義時の引数の数: n
+*      呼出時の引数の数: m
+*      n > m → エラーを吐く(関数のスタックフレームが引数の数固定のため)
+*      n < m → エラーなく動く(awkでは警告が出る)
+* ・正しい動作
+*      n > m → 問題なく動作する(少ない分の引数はローカル変数扱い)
+*      n < m → 警告
+*
+* ・正しくするには
+*      関数のスタックフレームを作成する命令を追加する
+*      コンパイル時に引数の数をチェックする
+*
+*/
 fn compile_user_definition_function(
     ast: &ast::Program,
     asm: &mut Asm,
