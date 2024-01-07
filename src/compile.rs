@@ -1,3 +1,4 @@
+use indexmap::IndexSet;
 use std::collections::HashMap;
 
 use crate::ast;
@@ -13,6 +14,10 @@ struct CompileEnv {
     while_label_count: usize,
     // if文が使ったラベルのカウント
     if_label_count: usize,
+    // 登場する変数の一覧
+    variables: IndexSet<String>,
+    // 登場する関数の一覧
+    functions: HashMap<String, usize>,
     // 関数の引数
     func_args: Vec<String>,
 }
@@ -81,8 +86,12 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     let mut env = CompileEnv {
         while_label_count: 0,
         if_label_count: 0,
+        variables: IndexSet::new(),
+        functions: HashMap::new(),
         func_args: vec![],
     };
+
+    find_user_definition_function(ast, &mut env);
 
     // BEGINパターンを探しコンパイル
     compile_all_begin_pattern(ast, &mut asm, &mut env)?;
@@ -100,6 +109,15 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
 
     Ok(asm_to_vmprogram(&asm, &mut env))
 }
+
+fn find_user_definition_function(ast: &ast::Program, env: &mut CompileEnv) {
+    ast.iter().for_each(|i| {
+        if let ast::Item::Function(func) = i {
+            env.functions.insert(func.name.clone(), func.args.len());
+        }
+    })
+}
+
 /*
 * ユーザー定義関数の仕様についてのメモ:
 * ・現状
@@ -362,6 +380,7 @@ fn compile_expression(
                     asm.push(OpcodeL::LoadSFVar(sfi));
                 } else {
                     // 関数の引数にない場合
+                    env.variables.insert(name.to_string());
                     asm.push(OpcodeL::LoadVar(name.to_string()));
                 }
             }
@@ -381,6 +400,7 @@ fn compile_expression(
                     if let Some(sfi) = env.func_args.iter().position(|n| n == name) {
                         asm.push(OpcodeL::SetSFVar(sfi));
                     } else {
+                        env.variables.insert(name.to_string());
                         asm.push(OpcodeL::SetVar(name.to_string()))
                     }
                 }
@@ -406,6 +426,9 @@ fn compile_expression(
             asm.push(OpcodeL::Call(index));
         }
         ast::Expression::CallUserFunc { name, args } => {
+            if *env.functions.get(name).unwrap() < args.len() {
+                eprintln!("warning: function `{}' called with more arguments than declared", name);
+            }
             // 引数をpushする(前から)
             for a in args.iter() {
                 compile_expression(a, asm, env)?;
