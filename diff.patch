@@ -1,0 +1,100 @@
+diff --git a/src/compile.rs b/src/compile.rs
+index 6d5d4ef..5858523 100644
+--- a/src/compile.rs
++++ b/src/compile.rs
+@@ -16,7 +16,7 @@ struct CompileEnv {
+     if_label_count: usize,
+     // 登場する変数の一覧
+     variables: IndexSet<String>,
+-    // 登場する関数の一覧
++    // 登場する関数の一覧(と引数のサイズ)
+     functions: HashMap<String, usize>,
+     // 関数の引数
+     func_args: Vec<String>,
+@@ -131,7 +131,7 @@ fn find_user_definition_function(ast: &ast::Program, env: &mut CompileEnv) {
+ *
+ * ・正しくするには
+ *      関数のスタックフレームを作成する命令を追加する
+-*      コンパイル時に引数の数をチェックする
++*      (済)コンパイル時に引数の数をチェックする
+ *
+ */
+ fn compile_user_definition_function(
+@@ -363,7 +363,7 @@ fn compile_expression(
+     // compile_expressionはeval関数のように再帰しながら式をコンパイルする
+     match expression {
+         ast::Expression::Value(v) => {
+-            asm.push(OpcodeL::Push(v.clone()));
++            asm.push(OpcodeL::Push(v.clone()))
+         }
+         ast::Expression::BinaryOp { op, left, right } => {
+             compile_expression(left, asm, env)?;
+@@ -426,6 +426,7 @@ fn compile_expression(
+             asm.push(OpcodeL::Call(index));
+         }
+         ast::Expression::CallUserFunc { name, args } => {
++            // wargning
+             if *env.functions.get(name).unwrap() < args.len() {
+                 eprintln!("warning: function `{}' called with more arguments than declared", name);
+             }
+diff --git a/src/main.rs b/src/main.rs
+index a024361..884a085 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -70,7 +70,7 @@ fn main() {
+             DebugLevel::Env
+         } else {
+             eprintln!("Invalid debuglevel: {}", debuglevel);
+-            return;
++            return
+         }
+     }
+ 
+diff --git a/src/vm/mod.rs b/src/vm/mod.rs
+index 71013c4..48f1b0d 100644
+--- a/src/vm/mod.rs
++++ b/src/vm/mod.rs
+@@ -17,6 +17,7 @@ pub enum Opcode {
+     NIf(usize),
+     Call(usize),
+     CallUserFunc(usize),
++    MakeStackFrame(usize),
+     Return,
+     // Expression
+     Add,
+@@ -141,19 +142,26 @@ impl VM<'_> {
+                     // プログラムカウンタを保存
+                     self.retpc.push(self.pc);
+                     self.pc = *i;
+-                    // make stack frame
+-                    self.func_env.push(vec![]);
+-                    // 引数を読み込み
+-                    let argv = self.stack.pop().unwrap().to_float() as usize;
+-                    let args = self.func_env.last_mut().unwrap();
+-                    for _ in 0..argv {
+-                        args.push(self.stack.pop().unwrap());
+-                    }
+-                    args.reverse();
+                     // pcに1を足されると困るのでcontinue(jumpと同じ挙動)
+                     continue;
+                 }
+ 
++                //
++                // MakeStackFrame
++                // スタックフレームを作り，引数を登録する
++                // iはスタックフレームの大きさ
++                Opcode::MakeStackFrame(i) => {
++                        // make stack frame
++                        self.func_env.push(vec![]);
++                        // 引数を読み込み
++                        let argv = self.stack.pop().unwrap().to_float() as usize;
++                        let args = self.func_env.last_mut().unwrap();
++                        for _ in 0..argv {
++                            args.push(self.stack.pop().unwrap());
++                        }
++                        args.reverse();
++                }
++
+                 // 関数呼び出しから復帰します
+                 // 戻り先pcスタックから一つ取り出し，プログラムカウンタをセットします
+                 Opcode::Return => {
