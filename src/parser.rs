@@ -11,8 +11,11 @@ peg::parser! {
         // 改行文字は含まないので予め消してから
         pub rule prog() -> ast::Program
             = __ i:(
-                (patternaction() / function()) ** (_ [';' | '\n']* _)
+                (patternaction() / function()) ** comment_cr()
             ) __ { i }
+
+        rule comment_cr()
+            = (_ (";" / ("#" [^ '\n']* ) "\n" / "\n")* _)
 
         // patternactionはpattern BEGIN とaction {} の複合
         rule patternaction() -> ast::Item
@@ -38,7 +41,7 @@ peg::parser! {
 
         // action は {} で囲われていて，それぞれの文は ; で区切られている
         rule action() -> ast::Statement
-            = "{" __ a:(statement() ** (_ [';' | '\n']* _)) __ "}" { ast::Statement::Action(a) }
+            = "{" __ a:(statement() ** comment_cr()) __ "}" { ast::Statement::Action(a) }
 
         // print文 POSIXでは括弧の前に空白を置くことが許可される
         rule statement() -> ast::Statement
@@ -209,7 +212,7 @@ peg::parser! {
 
         // 空白文字を処理
         rule _() = [' ' | '\t']*
-        rule __() = [' ' | '\t' | '\n']*
+        rule __() = (" " / "\t" / ("#" [^ '\n']* ) / "\n")*
     }
 }
 
