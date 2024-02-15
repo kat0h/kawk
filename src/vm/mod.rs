@@ -282,7 +282,10 @@ impl VM<'_> {
                 Opcode::LoadArray(n) => {
                     // 二次元配列の取り扱いは想定していない
                     let index = self.stack.pop().unwrap().to_str();
-                    let val = self.envarray[*n].get(&index).unwrap_or(&Value::None).clone();
+                    let val = self.envarray[*n]
+                        .get(&index)
+                        .unwrap_or(&Value::None)
+                        .clone();
                     self.stack.push(val);
                 }
                 Opcode::SetArray(n) => {

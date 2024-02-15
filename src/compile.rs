@@ -427,7 +427,10 @@ fn compile_expression(
         }
         ast::Expression::CallUserFunc { name, args } => {
             if *env.functions.get(name).unwrap() < args.len() {
-                eprintln!("warning: function `{}' called with more arguments than declared", name);
+                eprintln!(
+                    "warning: function `{}' called with more arguments than declared",
+                    name
+                );
             }
             // 引数をpushする(前から)
             for a in args.iter() {

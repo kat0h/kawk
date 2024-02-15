@@ -9,13 +9,11 @@ peg::parser! {
     pub grammar awk() for str {
         // BEGIN { print(123) } のような一連のプログラム
         // 改行文字は含まないので予め消してから
+        // sp()が連続しているのはいわゆるケツカンマ対策
         pub rule prog() -> ast::Program
-            = __ i:(
-                (patternaction() / function()) ** comment_cr()
-            ) __ { i }
-
-        rule comment_cr()
-            = (_ (";" / ("#" [^ '\n']* ) "\n" / "\n")* _)
+            = sp()? i:(
+                (patternaction() / function()) ** sp()
+            )  sp()? { i }
 
         // patternactionはpattern BEGIN とaction {} の複合
         rule patternaction() -> ast::Item
@@ -39,9 +37,9 @@ peg::parser! {
                 "" { ast::Pattern::Always }
             }
 
-        // action は {} で囲われていて，それぞれの文は ; で区切られている
+        // action は {} で囲われていて，それぞれの文はひとつ以上の ; で区切られている
         rule action() -> ast::Statement
-            = "{" __ a:(statement() ** comment_cr()) __ "}" { ast::Statement::Action(a) }
+            = "{" sp()? a:(statement() ** sp()) sp()? "}" { ast::Statement::Action(a) }
 
         // print文 POSIXでは括弧の前に空白を置くことが許可される
         rule statement() -> ast::Statement
@@ -213,6 +211,7 @@ peg::parser! {
         // 空白文字を処理
         rule _() = [' ' | '\t']*
         rule __() = (" " / "\t" / ("#" [^ '\n']* ) / "\n")*
+        rule sp() = (" " / "\t" / ("#" [^ '\n']* ) / "\n" / ";")+
     }
 }
 
@@ -242,4 +241,23 @@ fn test_parser() {
     let actual = awk::prog(prg).unwrap();
 
     assert_eq!(expect, actual);
+}
+
+#[test]
+fn test_parser_2() {
+    let set = [
+        "{1;};",
+        ";;;;;;;;;;;;;;;;;;;;;;;;;",
+        "
+            BEGIN { # Test
+                print 121212121212121212121212; # コメントのテスト
+                print 123; # ハイジョージー
+            } # OK
+        ",
+        " ; BEGIN { ;  ; 123 ; ; } ;",
+        ";# hi\n;;{1;};;{;};{\n}",
+    ];
+    for p in set {
+        awk::prog(p).unwrap();
+    }
 }

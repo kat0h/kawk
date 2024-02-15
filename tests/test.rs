@@ -127,7 +127,7 @@ fn test_my_command() {
             }
             ",
             "",
-            "test\n\ntest2\n"
+            "test\n\ntest2\n",
         ],
         // [
         //     "",
