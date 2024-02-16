@@ -1,11 +1,20 @@
 # https://azisava.sakura.ne.jp/mandelbrot/algorithm.html
 
+function min(a, b) {
+  if (a < b) {
+    return a
+  } else {
+    return b
+  }
+}
+
 BEGIN {
-  print "P1"
+  print "P3"
 
   size = 4
   pixel = 1000
   print pixel, pixel
+  print 255
   for (i = 0; pixel > i; i++) {
       x = i * size / pixel - size / 2
       for (j = 0; pixel > j; j++) {
@@ -24,9 +33,10 @@ BEGIN {
               }
           }
           if (d) {
-              printf "1 "
+              printf min(k*12, 255) " "
+              printf "0 0 "
           } else {
-              printf "0 "
+              printf "255 255 255 "
           }
       }
       print

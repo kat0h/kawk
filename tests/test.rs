@@ -165,7 +165,9 @@ fn test_my_command() {
             "",
             "0\n1\n2\n3\n4\n5\n",
         ],
-        ["BEGIN{printf 123; print 123}", "", "123123\n"], // [
+        ["BEGIN{printf 123; print 123}", "", "123123\n"],
+        ["BEGIN{printf 0 == i}", "", "1"]
+        // [
                                                           //     "
                                                           //     BEGIN {
                                                           //       for (i=0; i<10;) {

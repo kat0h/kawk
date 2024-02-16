@@ -113,12 +113,13 @@ impl Value {
         Value::Num(0.0)
     }
     // 比較のルール
-    // 両方が数字 -> 数値として比較する
+    // 両方が数字(または未初期化の値) -> 数値として比較する
     // それ以外 -> 文字列に変換して比較する
     // POSIXの記述は誤りです
     //
     fn compbase(&self, val: &Value, op: Operator) -> Value {
-        let (left, right) = (self, val);
+        let left = if matches!(self, Value::None) { &Value::Num(0.0) } else { self };
+        let right = if matches!(val, Value::None) { &Value::Num(0.0) } else { val };
         Value::Num(
             if match (left, right) {
                 (Value::Num(left), Value::Num(right)) => match op {
