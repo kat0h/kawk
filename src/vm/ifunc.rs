@@ -2,6 +2,7 @@ use crate::ast::Value;
 use crate::vm::VM;
 use rand::prelude::*;
 use std::process::Command;
+use std::io::{stdout, Write};
 
 pub fn ifunc_sin(vm: &mut VM) {
     let arg = vm.stack.pop().unwrap();
@@ -93,4 +94,8 @@ pub fn ifunc_system(vm: &mut VM) {
         .spawn()
         .expect("Internal Error system()");
     let _ = cmd.wait();
+}
+
+pub fn ifunc_flush(_vm: &mut VM) {
+    stdout().flush().unwrap();
 }

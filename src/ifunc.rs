@@ -97,6 +97,11 @@ const INTERNAL_FUNC: &[IFunc] = &[
         func: ifunc::ifunc_system,
         arglen: 1,
     },
+    IFunc {
+        name: "flush",
+        func: ifunc::ifunc_flush,
+        arglen: 0,
+    },
 ];
 
 pub fn get_index_from_name(name: &str) -> Option<usize> {

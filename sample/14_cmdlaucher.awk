@@ -15,9 +15,9 @@ BEGIN {
     system("vim")
   } else if ($0 == 2) {
     system("top")
+    prompt()
   } else {
+    prompt()
     print "Error!! Type Correct command"
   }
-
-  prompt()
 }
