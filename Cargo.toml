@@ -17,3 +17,5 @@ assert_cmd = "1.0"
 
 [profile.release]
 opt-level = 3
+# cargo flamegraph 用
+# debug = true
