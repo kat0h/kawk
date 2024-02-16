@@ -328,7 +328,12 @@ fn compile_statement(
         // │  statement  │NO
         // └──update     │
         //               ▼
-        ast::Statement::For { init, test, updt, stat } => {
+        ast::Statement::For {
+            init,
+            test,
+            updt,
+            stat,
+        } => {
             let label = env.for_label_count;
             env.for_label_count += 1;
 
@@ -395,6 +400,94 @@ fn compile_expression(
             compile_expression(left, asm, env)?;
             compile_expression(right, asm, env)?;
             compile_operator(op, asm);
+        }
+        ast::Expression::IncDec { op, lval } => {
+            // 下のLvalueと共通化
+            let loadlval = |lvalue: &ast::LValue,
+                            asm: &mut Asm,
+                            env: &mut CompileEnv|
+             -> Result<(), &'static str> {
+                match lvalue {
+                    ast::LValue::Name(name) => {
+                        if let Some(sfi) = env.func_args.iter().position(|n| n == name) {
+                            asm.push(OpcodeL::LoadSFVar(sfi));
+                        } else {
+                            // 関数の引数にない場合
+                            env.variables.insert(name.to_string());
+                            asm.push(OpcodeL::LoadVar(name.to_string()));
+                        }
+                    }
+                    ast::LValue::Array { name, expr_list } => {
+                        // 順番に注意
+                        for expr in expr_list.iter() {
+                            compile_expression(expr, asm, env)?;
+                        }
+                        asm.push(OpcodeL::LoadArray(name.to_string()));
+                    }
+                };
+                Ok(())
+            };
+            let assign = |lvalue: &ast::LValue,
+                          asm: &mut Asm,
+                          env: &mut CompileEnv|
+             -> Result<(), &'static str> {
+                match lvalue {
+                    ast::LValue::Name(name) => {
+                        if let Some(sfi) = env.func_args.iter().position(|n| n == name) {
+                            asm.push(OpcodeL::SetSFVar(sfi));
+                        } else {
+                            env.variables.insert(name.to_string());
+                            asm.push(OpcodeL::SetVar(name.to_string()))
+                        }
+                    }
+                    ast::LValue::Array { name, expr_list } => {
+                        for expr in expr_list.iter() {
+                            compile_expression(expr, asm, env)?;
+                        }
+                        asm.push(OpcodeL::SetArray(name.to_string()));
+                    }
+                }
+                Ok(())
+            };
+            match op {
+                ast::IncDecType::PreInc => {
+                    // increment lvalue
+                    loadlval(lval, asm, env)?;
+                    asm.push(OpcodeL::Push(ast::Value::Num(1.0)));
+                    asm.push(OpcodeL::Add);
+                    assign(lval, asm, env)?;
+                    // load lvalue
+                    loadlval(lval, asm, env)?;
+                }
+                ast::IncDecType::PreDec => {
+                    loadlval(lval, asm, env)?;
+                    asm.push(OpcodeL::Push(ast::Value::Num(1.0)));
+                    asm.push(OpcodeL::Sub);
+                    assign(lval, asm, env)?;
+                    loadlval(lval, asm, env)?;
+                }
+                ast::IncDecType::PostInc => {
+                    // TODO: 未初期化のときi++は0．無理矢理実装している
+                    // increment lvalue
+                    loadlval(lval, asm, env)?;
+                    asm.push(OpcodeL::Push(ast::Value::Num(1.0)));
+                    asm.push(OpcodeL::Add);
+                    assign(lval, asm, env)?;
+                    // load lvalue
+                    loadlval(lval, asm, env)?;
+                    asm.push(OpcodeL::Push(ast::Value::Num(1.0)));
+                    asm.push(OpcodeL::Sub);
+                }
+                ast::IncDecType::PostDec => {
+                    loadlval(lval, asm, env)?;
+                    asm.push(OpcodeL::Push(ast::Value::Num(1.0)));
+                    asm.push(OpcodeL::Sub);
+                    assign(lval, asm, env)?;
+                    loadlval(lval, asm, env)?;
+                    asm.push(OpcodeL::Push(ast::Value::Num(1.0)));
+                    asm.push(OpcodeL::Add);
+                }
+            }
         }
         ast::Expression::GetField(e) => {
             compile_expression(e, asm, env)?;
@@ -471,23 +564,23 @@ fn compile_expression(
     Ok(())
 }
 
-fn compile_operator(op: &ast::Operator, asm: &mut Asm) {
+fn compile_operator(op: &ast::BOperator, asm: &mut Asm) {
     asm.push(match op {
-        ast::Operator::Add => OpcodeL::Add,
-        ast::Operator::Sub => OpcodeL::Sub,
-        ast::Operator::Mul => OpcodeL::Mul,
-        ast::Operator::Div => OpcodeL::Div,
-        ast::Operator::Pow => OpcodeL::Pow,
-        ast::Operator::Mod => OpcodeL::Mod,
-        ast::Operator::Cat => OpcodeL::Cat,
-        ast::Operator::And => OpcodeL::And,
-        ast::Operator::Or => OpcodeL::Or,
-        ast::Operator::LessThan => OpcodeL::LessThan,
-        ast::Operator::LessEqualThan => OpcodeL::LessEqualThan,
-        ast::Operator::NotEqual => OpcodeL::NotEqual,
-        ast::Operator::Equal => OpcodeL::Equal,
-        ast::Operator::GreaterThan => OpcodeL::GreaterThan,
-        ast::Operator::GreaterEqualThan => OpcodeL::GreaterEqualThan,
+        ast::BOperator::Add => OpcodeL::Add,
+        ast::BOperator::Sub => OpcodeL::Sub,
+        ast::BOperator::Mul => OpcodeL::Mul,
+        ast::BOperator::Div => OpcodeL::Div,
+        ast::BOperator::Pow => OpcodeL::Pow,
+        ast::BOperator::Mod => OpcodeL::Mod,
+        ast::BOperator::Cat => OpcodeL::Cat,
+        ast::BOperator::And => OpcodeL::And,
+        ast::BOperator::Or => OpcodeL::Or,
+        ast::BOperator::LessThan => OpcodeL::LessThan,
+        ast::BOperator::LessEqualThan => OpcodeL::LessEqualThan,
+        ast::BOperator::NotEqual => OpcodeL::NotEqual,
+        ast::BOperator::Equal => OpcodeL::Equal,
+        ast::BOperator::GreaterThan => OpcodeL::GreaterThan,
+        ast::BOperator::GreaterEqualThan => OpcodeL::GreaterEqualThan,
     })
 }
 
@@ -625,7 +718,7 @@ fn test_compile2() {
         pattern: ast::Pattern::Begin,
         action: ast::Statement::Action(vec![ast::Statement::Print(vec![
             ast::Expression::BinaryOp {
-                op: ast::Operator::Div,
+                op: ast::BOperator::Div,
                 left: Box::new(ast::Expression::Value(ast::Value::Num(6.0))),
                 right: Box::new(ast::Expression::Value(ast::Value::Num(2.0))),
             },

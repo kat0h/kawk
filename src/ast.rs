@@ -32,9 +32,13 @@ pub struct Function {
 pub enum Expression {
     Value(Value),
     BinaryOp {
-        op: Operator,
+        op: BOperator,
         left: Box<Expression>,
         right: Box<Expression>,
+    },
+    IncDec {
+        op: IncDecType,
+        lval: Box<LValue>,
     },
     GetField(Box<Expression>),
     LValue(LValue),
@@ -62,7 +66,7 @@ pub enum LValue {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Operator {
+pub enum BOperator {
     Add,              // +
     Sub,              // -
     Mul,              // *
@@ -78,6 +82,14 @@ pub enum Operator {
     Equal,            // ==
     GreaterThan,      // >
     GreaterEqualThan, // >=
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum IncDecType {
+    PostInc, // lvalue++
+    PostDec, // lvalue--
+    PreInc,  // ++lvalue
+    PreDec,  // --lvalue
 }
 
 #[derive(Debug, PartialEq)]

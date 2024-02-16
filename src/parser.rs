@@ -103,7 +103,7 @@ peg::parser! {
                 l:lvalue() _ "+=" _ e:@ {
                     ast::Expression::Assign {
                         lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
-                            op: ast::Operator::Add,
+                            op: ast::BOperator::Add,
                             left: Box::new(ast::Expression::LValue(l)),
                             right: Box::new(e),
                         })
@@ -112,7 +112,7 @@ peg::parser! {
                 l:lvalue() _ "-=" _ e:@ {
                     ast::Expression::Assign {
                         lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
-                            op: ast::Operator::Sub,
+                            op: ast::BOperator::Sub,
                             left: Box::new(ast::Expression::LValue(l)),
                             right: Box::new(e),
                         })
@@ -121,7 +121,7 @@ peg::parser! {
                 l:lvalue() _ "*=" _ e:@ {
                     ast::Expression::Assign {
                         lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
-                            op: ast::Operator::Mul,
+                            op: ast::BOperator::Mul,
                             left: Box::new(ast::Expression::LValue(l)),
                             right: Box::new(e),
                         })
@@ -130,7 +130,7 @@ peg::parser! {
                 l:lvalue() _ "/=" _ e:@ {
                     ast::Expression::Assign {
                         lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
-                            op: ast::Operator::Div,
+                            op: ast::BOperator::Div,
                             left: Box::new(ast::Expression::LValue(l)),
                             right: Box::new(e),
                         })
@@ -139,7 +139,7 @@ peg::parser! {
                 l:lvalue() _ "%=" _ e:@ {
                     ast::Expression::Assign {
                         lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
-                            op: ast::Operator::Mod,
+                            op: ast::BOperator::Mod,
                             left: Box::new(ast::Expression::LValue(l)),
                             right: Box::new(e),
                         })
@@ -148,34 +148,40 @@ peg::parser! {
                 l:lvalue() _ "^=" _ e:@ {
                     ast::Expression::Assign {
                         lval: l.clone(), expr: Box::new(ast::Expression::BinaryOp {
-                            op: ast::Operator::Pow,
+                            op: ast::BOperator::Pow,
                             left: Box::new(ast::Expression::LValue(l)),
                             right: Box::new(e),
                         })
                     }
                 }
                 --
-                l:(@) _ "||" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Or, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "||" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Or, left: Box::new(l), right: Box::new(r), } }
                 --
-                l:(@) _ "&&" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::And, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "&&" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::And, left: Box::new(l), right: Box::new(r), } }
                 --
-                l:(@) _ "<" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::LessThan, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ "<=" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::LessEqualThan, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ "!=" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::NotEqual, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ "==" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Equal, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ ">" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::GreaterThan, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ ">=" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::GreaterEqualThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "<" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::LessThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "<=" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::LessEqualThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "!=" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::NotEqual, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "==" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Equal, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ ">" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::GreaterThan, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ ">=" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::GreaterEqualThan, left: Box::new(l), right: Box::new(r), } }
                 --
-                l:(@) _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Cat, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Cat, left: Box::new(l), right: Box::new(r), } }
                 --
-                l:(@) _ "+" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Add, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ "-" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Sub, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "+" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Add, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "-" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Sub, left: Box::new(l), right: Box::new(r), } }
                 --
-                l:(@) _ "*" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Mul, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ "/" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Div, left: Box::new(l), right: Box::new(r), } }
-                l:(@) _ "%" _ r:@ { ast::Expression::BinaryOp { op: ast::Operator::Mod, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "*" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mul, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "/" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Div, left: Box::new(l), right: Box::new(r), } }
+                l:(@) _ "%" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mod, left: Box::new(l), right: Box::new(r), } }
                 --
-                l:@ _ "^" _ r:(@) { ast::Expression::BinaryOp { op: ast::Operator::Pow, left: Box::new(l), right: Box::new(r), } }
+                l:@ _ "^" _ r:(@) { ast::Expression::BinaryOp { op: ast::BOperator::Pow, left: Box::new(l), right: Box::new(r), } }
+                --
+                l:lvalue() _ "++" { ast::Expression::IncDec { op: ast::IncDecType::PostInc, lval: Box::new(l) } }
+                l:lvalue() _ "--" { ast::Expression::IncDec { op: ast::IncDecType::PostDec, lval: Box::new(l) } }
+                --
+                "++" _ l:lvalue() { ast::Expression::IncDec { op: ast::IncDecType::PreInc, lval: Box::new(l) } }
+                "--" _ l:lvalue() { ast::Expression::IncDec { op: ast::IncDecType::PreDec, lval: Box::new(l) } }
                 --
                 "$" _ e:@ { ast::Expression::GetField(Box::new(e)) }
                 --
@@ -241,7 +247,7 @@ fn test_parser() {
         pattern: ast::Pattern::Begin,
         action: ast::Statement::Action(vec![ast::Statement::Print(vec![
             ast::Expression::BinaryOp {
-                op: ast::Operator::Add,
+                op: ast::BOperator::Add,
                 left: Box::new(ast::Expression::Value(ast::Value::Num(123.0))),
                 right: Box::new(ast::Expression::Value(ast::Value::Num(333.0))),
             },
@@ -267,7 +273,7 @@ fn test_parser_2() {
         " ; BEGIN { ;  ; 123 ; ; } ;",
         ";# hi\n;;{1;};;{;};{\n}",
         "{while(1)print 1}",
-        "{while(1){print 1}}"
+        "{while(1){print 1}}",
     ];
     for p in set {
         awk::prog(p).unwrap();
