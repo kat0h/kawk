@@ -3,6 +3,7 @@ mod value;
 use crate::ast::Value;
 use crate::ifunc::call_internal_func_from_index;
 use std::collections::HashMap;
+use rand::prelude::*;
 
 use std::io::{BufRead, Write};
 
@@ -68,6 +69,8 @@ pub struct VM<'a> {
     retpc: Vec<usize>,
     // Stack frame 呼び出しで新しく作られ，returnで消される
     func_env: Vec<Vec<Value>>,
+    // random
+    rng: rand::rngs::StdRng,
 }
 
 // TODO
@@ -86,6 +89,7 @@ impl VM<'_> {
             envarray: vec![],
             retpc: vec![],
             func_env: vec![],
+            rng: rand::SeedableRng::from_rng(thread_rng()).unwrap(),
         }
     }
 
