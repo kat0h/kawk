@@ -46,6 +46,19 @@ peg::parser! {
             = precedence! {
                 // 式
                 e:expression() { ast::Statement::Expression(e) }
+                // printf文
+                "printf" _ "(" _ fmt:expression() _ ")" {
+                    ast::Statement::Printf {
+                        fmt: Box::new(fmt),
+                        args: vec![]
+                    }
+                }
+                "printf" [' ' | '\t'] _ fmt:expression() {
+                    ast::Statement::Printf {
+                        fmt: Box::new(fmt),
+                        args: vec![]
+                    }
+                }
                 // print文の引数の空白
                 // 括弧ありprint文
                 "print" _ "(" _ a:(expression() ** (_ "," _)) _ ")" {
@@ -281,6 +294,8 @@ fn test_parser_2() {
         ";# hi\n;;{1;};;{;};{\n}",
         "{while(1)print 1}",
         "{while(1){print 1}}",
+        "BEGIN{printf 123}",
+        "BEGIN{print 23}",
     ];
     for p in set {
         awk::prog(p).unwrap();

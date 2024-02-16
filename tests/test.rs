@@ -163,26 +163,25 @@ fn test_my_command() {
             }
             ",
             "",
-            "0\n1\n2\n3\n4\n5\n"
+            "0\n1\n2\n3\n4\n5\n",
         ],
-
-        // [
-        //     "
-        //     BEGIN {
-        //       for (i=0; i<10;) {
-        //         print i
-        //         i += 1
-        //       }
-        //     }
-        //     ",
-        //     "",
-        //     "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n"
-        // ],
-        // [
-        //     "",
-        //     "",
-        //     ""
-        // ],
+        ["BEGIN{printf 123; print 123}", "", "123123\n"], // [
+                                                          //     "
+                                                          //     BEGIN {
+                                                          //       for (i=0; i<10;) {
+                                                          //         print i
+                                                          //         i += 1
+                                                          //       }
+                                                          //     }
+                                                          //     ",
+                                                          //     "",
+                                                          //     "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n"
+                                                          // ],
+                                                          // [
+                                                          //     "",
+                                                          //     "",
+                                                          //     ""
+                                                          // ],
     ];
     for set in test_sets {
         let mut cmd = Command::cargo_bin("kawk").expect("Failed to find binary");

@@ -198,6 +198,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             // AWK
             vm::Opcode::Readline => "readline",
             vm::Opcode::Print(_) => "print",
+            vm::Opcode::Printf(_) => "printf",
             vm::Opcode::GetField => "getfield",
             // Variable
             vm::Opcode::InitEnv(_) => "initenv",
@@ -219,6 +220,7 @@ fn show_vmprog(vmprog: &compile::VMProgram) {
             vm::Opcode::Call(i) => i.to_string(),
             vm::Opcode::CallUserFunc(i) => i.to_string(),
             vm::Opcode::Print(l) => l.to_string(),
+            vm::Opcode::Printf(l) => l.to_string(),
             vm::Opcode::InitEnv(n) => n.to_string(),
             vm::Opcode::InitEnvArray(n) => n.to_string(),
             vm::Opcode::LoadVar(n) => n.to_string(),

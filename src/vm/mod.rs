@@ -37,6 +37,7 @@ pub enum Opcode {
     // AWK
     Readline,
     Print(usize),
+    Printf(usize),
     GetField,
     // Variable
     InitEnv(usize),
@@ -258,6 +259,17 @@ impl VM<'_> {
                 //
                 Opcode::Readline => op_readline(self, reader),
                 Opcode::Print(n) => op_print(self, writer, *n),
+                //
+                // Printf
+                // 現状，引数の数が一つ以上で，一つ目の引数しか見ない改行のないPrint
+                Opcode::Printf(n) => {
+                    // 引数を捨てる TODO
+                    for _ in 0..*n {
+                        self.stack.pop().unwrap();
+                    }
+                    let s = self.stack.pop().unwrap().to_str();
+                    write!(writer, "{s}",).unwrap();
+                }
                 Opcode::GetField => op_getfield_n(self),
 
                 //

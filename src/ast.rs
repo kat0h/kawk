@@ -96,6 +96,10 @@ pub enum IncDecType {
 pub enum Statement {
     Action(Vec<Statement>),
     Print(Vec<Expression>),
+    Printf {
+        fmt: Box<Expression>,
+        args: Vec<Expression>,
+    },
     Expression(Expression),
     While {
         exp: Expression,

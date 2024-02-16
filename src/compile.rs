@@ -29,7 +29,7 @@ struct CompileEnv {
 
 enum BCLabel {
     For(usize),
-    While(usize)
+    While(usize),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -62,6 +62,7 @@ enum OpcodeL {
     // AWK
     Readline,
     Print(usize),
+    Printf(usize),
     GetField,
     // Variable
     InitEnv(usize),
@@ -308,6 +309,15 @@ fn compile_statement(
                 compile_expression(e, asm, env)?;
             }
             asm.push(OpcodeL::Print(expressions.len()));
+        }
+
+        // printf文
+        ast::Statement::Printf { fmt, args } => {
+            compile_expression(fmt, asm, env)?;
+            for e in args.iter() {
+                compile_expression(e, asm, env)?;
+            }
+            asm.push(OpcodeL::Printf(args.len()))
         }
 
         // 式
@@ -723,6 +733,7 @@ fn asm_to_vmprogram(asm: &Asm, _env: &mut CompileEnv) -> VMProgram {
             // AWK
             OpcodeL::Readline => Opcode::Readline,
             OpcodeL::Print(len) => Opcode::Print(*len),
+            OpcodeL::Printf(len) => Opcode::Printf(*len),
             OpcodeL::GetField => Opcode::GetField,
             // Variable
             OpcodeL::InitEnv(n) => Opcode::InitEnv(*n),
