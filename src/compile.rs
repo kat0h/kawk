@@ -12,6 +12,8 @@ type Asm = Vec<OpcodeL>;
 struct CompileEnv {
     // while文が使ったラベルのカウント
     while_label_count: usize,
+    // for文が使ったラベルのカウント
+    for_label_count: usize,
     // if文が使ったラベルのカウント
     if_label_count: usize,
     // 登場する変数の一覧
@@ -85,6 +87,7 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
     // コンパイル時環境
     let mut env = CompileEnv {
         while_label_count: 0,
+        for_label_count: 0,
         if_label_count: 0,
         variables: IndexSet::new(),
         functions: HashMap::new(),
@@ -317,6 +320,29 @@ fn compile_statement(
             compile_statement(stat, asm, env)?;
             asm.push(OpcodeL::Jump(format!("while_s_{label}")));
             asm.push(OpcodeL::Label(format!("while_e_{label}")));
+        }
+
+        // For
+        //    initialize
+        // ┌─►conditon?──┐
+        // │  statement  │NO
+        // └──update     │
+        //               ▼
+        ast::Statement::For { init, test, updt, stat } => {
+            let label = env.for_label_count;
+            env.for_label_count += 1;
+
+            // init
+            compile_statement(init, asm, env)?;
+            asm.push(OpcodeL::Label(format!("for_s_{label}")));
+            // condition?
+            compile_expression(test, asm, env)?;
+            asm.push(OpcodeL::NIf(format!("for_e_{label}")));
+            compile_statement(stat, asm, env)?;
+            // update
+            compile_statement(updt, asm, env)?;
+            asm.push(OpcodeL::Jump(format!("for_s_{label}")));
+            asm.push(OpcodeL::Label(format!("for_e_{label}")));
         }
 
         // If文

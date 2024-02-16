@@ -89,6 +89,12 @@ pub enum Statement {
         exp: Expression,
         stat: Box<Statement>,
     },
+    For {
+        init: Box<Statement>,
+        test: Expression,
+        updt: Box<Statement>,
+        stat: Box<Statement>,
+    },
     If {
         cond: Expression,
         stat: Box<Statement>,

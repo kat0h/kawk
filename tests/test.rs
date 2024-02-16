@@ -129,6 +129,17 @@ fn test_my_command() {
             "",
             "test\n\ntest2\n",
         ],
+        [
+            "
+            BEGIN {
+              for (i=0; i<10; i+=1) {
+                print i
+              }
+            }
+            ",
+            "",
+            "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n"
+        ],
         // [
         //     "",
         //     "",

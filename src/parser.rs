@@ -55,9 +55,19 @@ peg::parser! {
                     ast::Statement::Print(a)
                 }
                 // while文
-                "while" _ "(" e:expression() _ ")" _ s:action() {
+                "while" _ "(" e:expression() _ ")" __ s:statement() {
                     ast::Statement::While {
                         exp: e,
+                        stat: Box::new(s)
+                    }
+                }
+                // for
+                // statement()の代わりにsimple_statement()をつくる
+                "for" _ "(" _ a:statement() _ ";" _ b:expression() _ ";" _ c:statement() _ ")" __ s:statement() {
+                    ast::Statement::For {
+                        init: Box::new(a),
+                        test: b,
+                        updt: Box::new(c),
                         stat: Box::new(s)
                     }
                 }
@@ -256,6 +266,8 @@ fn test_parser_2() {
         ",
         " ; BEGIN { ;  ; 123 ; ; } ;",
         ";# hi\n;;{1;};;{;};{\n}",
+        "{while(1)print 1}",
+        "{while(1){print 1}}"
     ];
     for p in set {
         awk::prog(p).unwrap();
