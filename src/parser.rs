@@ -46,13 +46,18 @@ peg::parser! {
             = precedence! {
                 // 式
                 e:expression() { ast::Statement::Expression(e) }
+                // print文の引数の空白
                 // 括弧ありprint文
                 "print" _ "(" _ a:(expression() ** (_ "," _)) _ ")" {
                     ast::Statement::Print(a)
                 }
                 // 括弧なしprint文
-                "print" _ a:(expression() ** (_ "," _)) {
+                "print" [' ' | '\t'] _ a:(expression() ** (_ "," _)) {
                     ast::Statement::Print(a)
+                }
+                // 引数なし括弧なしprint文
+                "print" {
+                    ast::Statement::Print(vec![])
                 }
                 // while文
                 "while" _ "(" e:expression() _ ")" __ s:statement() {
