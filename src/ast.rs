@@ -117,6 +117,8 @@ pub enum Statement {
         els: Box<Statement>,
     },
     Return(Expression),
+    Break,
+    Continue,
 }
 
 #[derive(Debug, PartialEq, Clone)]

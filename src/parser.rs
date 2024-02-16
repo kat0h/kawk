@@ -94,6 +94,8 @@ peg::parser! {
                     ast::Statement::Return(ast::Expression::Value(ast::Value::None))
                 }
                 a:action() { a }
+                "break" { ast::Statement::Break }
+                "continue" { ast::Statement::Continue }
             }
 
         // 式

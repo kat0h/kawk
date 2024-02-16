@@ -153,6 +153,19 @@ fn test_my_command() {
         ],
         ["BEGIN{print ++i}", "", "1\n"],
         ["BEGIN{print i++}", "", "0\n"],
+        [
+            "
+            BEGIN {
+              for (i=0; i<10; i+=1) {
+                if (i>5) break
+                print i
+              }
+            }
+            ",
+            "",
+            "0\n1\n2\n3\n4\n5\n"
+        ],
+
         // [
         //     "
         //     BEGIN {

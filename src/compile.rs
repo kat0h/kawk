@@ -22,6 +22,14 @@ struct CompileEnv {
     functions: HashMap<String, usize>,
     // 関数の引数
     func_args: Vec<String>,
+    // break, continueのジャンプ先
+    // >0でwhile<0でfor
+    break_continue: Vec<BCLabel>,
+}
+
+enum BCLabel {
+    For(usize),
+    While(usize)
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -92,6 +100,7 @@ pub fn compile(ast: &ast::Program) -> Result<VMProgram, &str> {
         variables: IndexSet::new(),
         functions: HashMap::new(),
         func_args: vec![],
+        break_continue: vec![],
     };
 
     find_user_definition_function(ast, &mut env);
@@ -313,13 +322,18 @@ fn compile_statement(
             // while文用のラベルを使う
             let label = env.while_label_count;
             env.while_label_count += 1;
+            env.break_continue.push(BCLabel::While(label));
 
+            // continueの飛び先
             asm.push(OpcodeL::Label(format!("while_s_{label}")));
             compile_expression(exp, asm, env)?;
             asm.push(OpcodeL::NIf(format!("while_e_{label}")));
             compile_statement(stat, asm, env)?;
             asm.push(OpcodeL::Jump(format!("while_s_{label}")));
+            // breakの飛び先
             asm.push(OpcodeL::Label(format!("while_e_{label}")));
+
+            env.break_continue.pop().unwrap();
         }
 
         // For
@@ -336,6 +350,7 @@ fn compile_statement(
         } => {
             let label = env.for_label_count;
             env.for_label_count += 1;
+            env.break_continue.push(BCLabel::For(label));
 
             // init
             compile_statement(init, asm, env)?;
@@ -345,9 +360,12 @@ fn compile_statement(
             asm.push(OpcodeL::NIf(format!("for_e_{label}")));
             compile_statement(stat, asm, env)?;
             // update
+            asm.push(OpcodeL::Label(format!("for_c_{label}"))); // continueの飛び先
             compile_statement(updt, asm, env)?;
             asm.push(OpcodeL::Jump(format!("for_s_{label}")));
-            asm.push(OpcodeL::Label(format!("for_e_{label}")));
+            asm.push(OpcodeL::Label(format!("for_e_{label}"))); // breakの飛び先
+
+            env.break_continue.pop().unwrap();
         }
 
         // If文
@@ -379,6 +397,36 @@ fn compile_statement(
         ast::Statement::Return(e) => {
             compile_expression(e, asm, env)?;
             asm.push(OpcodeL::Return);
+        }
+
+        ast::Statement::Break => {
+            if let Some(label) = env.break_continue.last() {
+                match label {
+                    BCLabel::For(l) => {
+                        asm.push(OpcodeL::Jump(format!("for_e_{l}")));
+                    }
+                    BCLabel::While(l) => {
+                        asm.push(OpcodeL::Jump(format!("while_e_{l}")));
+                    }
+                }
+            } else {
+                return Err("`break' is not allowed outside a loop");
+            }
+        }
+
+        ast::Statement::Continue => {
+            if let Some(label) = env.break_continue.last() {
+                match label {
+                    BCLabel::For(l) => {
+                        asm.push(OpcodeL::Jump(format!("for_c_{l}")));
+                    }
+                    BCLabel::While(l) => {
+                        asm.push(OpcodeL::Jump(format!("while_s_{l}")));
+                    }
+                }
+            } else {
+                return Err("`continue' is not allowed outside a loop");
+            }
         }
     }
 
