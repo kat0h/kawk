@@ -194,9 +194,9 @@ peg::parser! {
                 l:(@) _ "*" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mul, left: Box::new(l), right: Box::new(r), } }
                 l:(@) _ "/" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Div, left: Box::new(l), right: Box::new(r), } }
                 l:(@) _ "%" _ r:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mod, left: Box::new(l), right: Box::new(r), } }
-                --
-                "+" _ e:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mul, left: Box::new(e), right: Box::new(ast::Expression::Value(ast::Value::Num(1.0))), } }
-                "-" _ e:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mul, left: Box::new(e), right: Box::new(ast::Expression::Value(ast::Value::Num(-1.0))), } }
+                // --
+                // "+" _ e:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mul, left: Box::new(e), right: Box::new(ast::Expression::Value(ast::Value::Num(1.0))), } }
+                // "-" _ e:@ { ast::Expression::BinaryOp { op: ast::BOperator::Mul, left: Box::new(e), right: Box::new(ast::Expression::Value(ast::Value::Num(-1.0))), } }
                 --
                 l:@ _ "^" _ r:(@) { ast::Expression::BinaryOp { op: ast::BOperator::Pow, left: Box::new(l), right: Box::new(r), } }
                 --
@@ -241,7 +241,7 @@ peg::parser! {
 
         // 数字 (もっと詳しくパースできるように)
         pub rule number() -> f64
-            = n:$("-"? ['0'..='9']+ ("." ['0'..='9']+)?) {? n.parse::<f64>().or(Err("i64")) }
+            = n:$(['0'..='9']+ ("." ['0'..='9']+)?) {? n.parse::<f64>().or(Err("i64")) }
 
         // 文字列
         // https://github.com/kevinmehall/rust-peg/issues/314

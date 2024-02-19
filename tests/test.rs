@@ -23,6 +23,9 @@ fn test_my_command() {
             "",
             "55\n",
         ],
+        // TODO: 単項演算子を実装したら
+        // ["BEGIN{printf 1 (-2)}", "", "1-2"],
+        ["BEGIN{printf 1-2}", "", "-1"],
         // 引数のない関数呼び出し
         [
             "
@@ -166,7 +169,8 @@ fn test_my_command() {
             "0\n1\n2\n3\n4\n5\n",
         ],
         ["BEGIN{printf 123; print 123}", "", "123123\n"],
-        ["BEGIN{printf 0 == i}", "", "1"]
+        ["BEGIN{printf 0 == i}", "", "1"],
+        ["BEGIN{printf 1+2}", "", "3"]
         // [
                                                           //     "
                                                           //     BEGIN {
@@ -186,6 +190,7 @@ fn test_my_command() {
                                                           // ],
     ];
     for set in test_sets {
+        dbg!(&set);
         let mut cmd = Command::cargo_bin("kawk").expect("Failed to find binary");
         cmd.arg(set[0]);
         cmd.write_stdin(set[1]);
